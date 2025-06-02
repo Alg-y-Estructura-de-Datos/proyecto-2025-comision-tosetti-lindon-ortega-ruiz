@@ -2,6 +2,9 @@
 #include <sstream> // Permite trabajar con las lineas de csv como strings (stringstream, getline)
 #include <fstream> // Permite leer y escribir archivo externos (ifstream)
 #include "HashMap\HashMap.h" 
+#include "Lista\Lista.h"
+#include "Cola\Cola.h"
+#include <unordered_map>
 #define NOMBRE_ARCHIVO ("C:/Users/mairi/source/proyecto-2025-comision-tosetti-lindon-ortega-ruiz/ventas_sudamerica.csv")
 using namespace std;
 
@@ -23,17 +26,11 @@ int main() {
 
     ifstream archivo(NOMBRE_ARCHIVO); // Abrir el archivo
 
-    if (!archivo.is_open()) {
-        cout << "Error al abrir el archivo."; 
-        return 1;
-    } else {
-        cout << "Archivo abierto con éxito.";
-    }
-
     string linea;
     char delimitador = ',';
 
     getline(archivo, linea); // Descartar primera linea
+    int sizeofmap = 0;
 
     while (getline(archivo, linea)) // Leer todas las líneas
     {
@@ -60,23 +57,79 @@ int main() {
         v.cantidad = stoi(cantidad);
         v.precio_unitario = stof(precio_unitario);
         v.monto_total = stof(monto_total);
-        
         mapaVenta.put(v.id, v);
+        sizeofmap++;
     }
 
     archivo.close();
 
+    cout << "Archivo cargado con éxito." << endl;
+    cout << sizeofmap << " lineas cargadas." << endl;
+
     // PROCESAMIENTO
     // Top 5 ciudades con mayor monto de ventas por pais
+
+        //Identificar ciudades únicas y sumo por ciudad
+    struct ciudad_monto {
+        string nombre;
+        float total;
+    };
+
+    Lista<ciudad_monto> ciud_dist;
+    for (int i = 1; i < sizeofmap; i++) {
+        Venta v = mapaVenta.get(i);
+        int j = 0;
+        bool found = false;
+        int pos = 0;
+        while (j < ciud_dist.getTamanio() && !found) {
+            if (v.ciudad == (ciud_dist.getDato(j)).nombre) {
+                found = true;
+                pos = j;
+
+            } else {
+                j++;
+            }
+        }
+        ciudad_monto cm;
+        cm.nombre = v.ciudad;
+        if (!found) {
+            cm.total = v.monto_total;
+            ciud_dist.insertarUltimo(cm);
+        } else {
+            cm.total = (ciud_dist.getDato(pos)).total;
+            cm.total += v.monto_total;
+            ciud_dist.reemplazar(pos, cm);
+        }
+    }
     
-    // Monto total vendido por producto, discriminado por país.
-    // Promedio de ventas por categoría en cada país. 
-    // Medio de envío más utilizado por país.
-    // Medio de envío más utilizado por categoría.
-    // Día con mayor cantidad de ventas (por monto de dinero) en toda la base de datos.
-    // Estado de envío más frecuente por país.
-    // Producto más vendido en cantidad total (no en dinero, sino en unidades).
-    // Producto menos vendido en cantidad total.
+    cout << "Ciudades y sus montos totales: " << endl;
+    for (int i = 0; i < ciud_dist.getTamanio(); i++) {
+        cout << endl;
+        cout << "Ciudad: " << (ciud_dist.getDato(i)).nombre << endl;
+        cout << "Monto: " << (ciud_dist.getDato(i)).total << endl;
+    }
+
+        // Divido en colas según PAIS
+    
+        // Ordeno según monto_total de la ciudad
+        // Extraigo las primeras 5 de cada cola
+
+
+    // Monto total vendido por producto, discriminado por país
+    
+    // Promedio de ventas por categoría en cada país
+
+    // Medio de envío más utilizado por país
+
+    // Medio de envío más utilizado por categoría
+
+    // Día con mayor cantidad de ventas (por monto de dinero) en toda la base de datos
+
+    // Estado de envío más frecuente por país
+
+    // Producto más vendido en cantidad total (no en dinero, sino en unidades)
+
+    // Producto menos vendido en cantidad total
 
 
     // MENU --> ~ 9 opciones
