@@ -1,10 +1,10 @@
-#include <iostream> 
+#include <iostream> // cout, cin
 #include <sstream> // Permite trabajar con las lineas de csv como strings (stringstream, getline)
 #include <fstream> // Permite leer y escribir archivo externos (ifstream)
+#include <iomanip> // Permite manipular cout para que no trunque automaticamente los float
 #include "HashMap\HashMap.h" 
 #include "Lista\Lista.h"
 #include "Cola\Cola.h"
-#include <unordered_map>
 #define NOMBRE_ARCHIVO ("C:/Users/mairi/source/proyecto-2025-comision-tosetti-lindon-ortega-ruiz/ventas_sudamerica.csv")
 using namespace std;
 
@@ -16,6 +16,12 @@ struct Venta {
 
 unsigned int hashFunc(unsigned int clave) {
     return clave;  // Retorna el valor del ID como el índice hash
+}
+
+unsigned int hashString(const string& clave) {
+    unsigned int hash = 0;
+    for (char c : clave) hash += (unsigned int)c;
+    return hash;
 }
 
 
@@ -74,15 +80,17 @@ int main() {
         string nombre;
         float total;
     };
+    
+    // POSIBLE MEJORA: USAR ESTO EN LUGAR DE STRUCT?? --> HashMap<unsigned int, float> mapaCiudadTotal(100, hashString);
 
     Lista<ciudad_monto> ciud_dist;
-    for (int i = 1; i < sizeofmap; i++) {
+    for (int i = 1; i < sizeofmap; i++) { //IF básico de conteo --> no cuenta
         Venta v = mapaVenta.get(i);
         int j = 0;
         bool found = false;
         int pos = 0;
-        while (j < ciud_dist.getTamanio() && !found) {
-            if (v.ciudad == (ciud_dist.getDato(j)).nombre) {
+        while (j < ciud_dist.getTamanio() && !found) { // IF básico de conteo + IF true/false --> no cuenta
+            if (v.ciudad == (ciud_dist.getDato(j)).nombre) { // IF 2500 ventas * (30 ciudades / 2) = 37500 IF
                 found = true;
                 pos = j;
 
@@ -90,9 +98,13 @@ int main() {
                 j++;
             }
         }
+        // 2500 vueltas (1 por cada venta)
+        //  dentro de cada venta,
+        //  1 IF por cada ciudad en ciud_dist
+        //  El máximo de ciudades en ciud_dist es 30
         ciudad_monto cm;
         cm.nombre = v.ciudad;
-        if (!found) {
+        if (!found) { // IF true/false --> no cuenta
             cm.total = v.monto_total;
             ciud_dist.insertarUltimo(cm);
         } else {
@@ -103,15 +115,17 @@ int main() {
     }
     
     cout << "Ciudades y sus montos totales: " << endl;
-    for (int i = 0; i < ciud_dist.getTamanio(); i++) {
+    for (int i = 0; i < ciud_dist.getTamanio(); i++) { // IF de conteo --> no cuenta
+        cout << fixed << setprecision(2);
         cout << endl;
-        cout << "Ciudad: " << (ciud_dist.getDato(i)).nombre << endl;
-        cout << "Monto: " << (ciud_dist.getDato(i)).total << endl;
+        cout << "Ciudad: " << (ciud_dist.getDato(i)).nombre << endl; // búsqueda de o(1) --> 1 IF
+        cout << "Monto: " << (ciud_dist.getDato(i)).total << endl; // búsqueda de o(1) --> 1 IF
     }
 
         // Divido en colas según PAIS
     
         // Ordeno según monto_total de la ciudad
+    
         // Extraigo las primeras 5 de cada cola
 
 
