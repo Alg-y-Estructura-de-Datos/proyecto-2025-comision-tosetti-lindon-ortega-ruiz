@@ -14,7 +14,9 @@ private:
 public:
   Lista();
 
-  Lista(const Lista<T> &li);
+  Lista(const Lista<T> &li); //constructor por copia
+
+  Lista<T>& operator=(const Lista<T>&); // operador de asignación
 
   ~Lista();
 
@@ -50,7 +52,29 @@ template <class T> Lista<T>::Lista() { inicio = nullptr; }
  * @tparam T
  * @param li
  */
-template <class T> Lista<T>::Lista(const Lista<T> &li) { inicio = li.inicio; }
+// Constructor por copia (MODIFICADO)
+template <class T> Lista<T>::Lista(const Lista<T> &li) : inicio(nullptr) {
+  Nodo<T> *actual = li.inicio;
+  while (actual != nullptr) {
+    insertarUltimo(actual->getDato()); // Copiamos el dato
+    actual = actual->getSiguiente();
+  }
+}
+
+// Operador de asignación (MODIFICADO)
+template <class T>
+Lista<T>& Lista<T>::operator=(const Lista<T>& otra) {
+  if (this != &otra) {
+    vaciar(); // Limpiar contenido anterior
+
+    Nodo<T> *actual = otra.inicio;
+    while (actual != nullptr) {
+      insertarUltimo(actual->getDato());
+      actual = actual->getSiguiente();
+    }
+  }
+  return *this;
+}
 
 /**
  * Destructor de la clase Lista, se encarga de liberar la memoria de todos los

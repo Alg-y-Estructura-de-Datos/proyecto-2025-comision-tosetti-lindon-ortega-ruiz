@@ -88,13 +88,24 @@ void HashMap<K, T>::put(K clave, T valor)
 {
   unsigned int pos = hashFuncP(clave) % tamanio;
 
-  if (tabla[pos] != NULL)
-  {
-    //Manejar la Colision!!!!!!!
-    throw 409;
-  }
+  //EL SIGUIENTE CODIGO HA SIDO MODIFICADOO
+  // Manejo de colisiones con linear probing
+  unsigned int originalPos = pos;
+  do {
+    if (tabla[pos] == NULL) {
+      // Celda libre: insertar nueva entrada
+      tabla[pos] = new HashEntry<K, T>(clave, valor);
+      return;
+    } else if (tabla[pos]->getClave() == clave) {
+      // Clave ya existente: reemplazar valor
+      tabla[pos]->setValor(valor);
+      return;
+    }
 
-  tabla[pos] = new HashEntry<K, T>(clave, valor); //Corresponde a una fila en la tabla HASH
+    pos = (pos + 1) % tamanio;
+  } while (pos != originalPos);
+
+  throw std::runtime_error("HashMap lleno. No se pudo insertar.");
 }
 
 template <class K, class T>
