@@ -2,6 +2,7 @@
 #include <sstream> // Permite trabajar con las lineas de csv como strings (stringstream, getline)
 #include <fstream> // Permite leer y escribir archivo externos (ifstream)
 #include <iomanip> // Permite manipular cout para que no trunque automaticamente los float
+#include <algorithm> // Swap --> Intercambiar los valores de dos variables
 #include "HashMap\HashMap.h" // CAMBIAR POR HASHMAP LIST PARA USAR MEJOR MANEJO DE COLISIONES
 #include "Lista\Lista.h"
 #include "Cola\Cola.h"
@@ -37,6 +38,48 @@ auto trim = [](string s) { //FUNCION BUSCADA EN INTERNET PARA ASEGURAR QUE LOS D
     while (!s.empty() && isspace(s.back())) s.pop_back();
     return s;
 };
+
+Nodo<ciudad_monto>* obtenerNodo(Lista<ciudad_monto>& lista, int pos) { // Para trabajar con punteros, obtenemos el nodo
+    Nodo<ciudad_monto>* aux = lista.getInicio(); // el auxiliar es el primer nodo de la lista
+    int i = 0;
+    while (aux != nullptr && i < pos) { // busco la posicion
+        aux = aux->getSiguiente();
+        i++;
+    }
+    return aux; // devuelve el nodo correspondiente a la posicion
+}
+
+// funcion de particion para simplificar el quicksort, divide en mayores y menores que el pivote 
+int partition(Lista<ciudad_monto>& lista, int bot, int top) { //
+    Nodo<ciudad_monto>* pivotNodo = obtenerNodo(lista, top); // el primer pivot es el nodo del final
+    float pivot = pivotNodo->getDato().total; //obtengo el total del pivot
+    int i = bot - 1; //valor que usaré para dividir la lista
+
+    for (int j = bot; j < top; j++) { //recorro la particion de principio a fin
+        Nodo<ciudad_monto>* nodoJ = obtenerNodo(lista, j);
+        if (nodoJ->getDato().total >= pivot) { // si el valor del nodo es igual o mayor al pivot, intercambio los nodos con el nodo de la posicion i
+            i++;
+            Nodo<ciudad_monto>* nodoI = obtenerNodo(lista, i);
+            ciudad_monto temp = nodoI->getDato();
+            nodoI->setDato(nodoJ->getDato());
+            nodoJ->setDato(temp); 
+        }
+    }
+    Nodo<ciudad_monto>* nodoI1 = obtenerNodo(lista, i + 1);
+    ciudad_monto temp = nodoI1->getDato();
+    nodoI1->setDato(pivotNodo->getDato());
+    pivotNodo->setDato(temp);
+    return i + 1;
+}
+
+// Implementación de Quicksort para Lista Enlazada
+void quicksort(Lista<ciudad_monto>& lista, int bot, int top) {
+    if (bot < top) {
+        int pi = partition(lista, bot, top);
+        quicksort(lista, bot, pi - 1);
+        quicksort(lista, pi + 1, top);
+    }
+}
 
 int main() {
     HashMap<unsigned int, Venta> mapaVenta(6000, hashFunc); // Mapa de ventas por ID
@@ -170,8 +213,9 @@ int main() {
         cout << "País: " << claves_mapaPaises.getDato(i) << endl;
         Lista<ciudad_monto> paisactual = mapaPaises.get(claves_mapaPaises.getDato(i));
 
-        // IMPLEMENTAR UN QUICKSORT ACÁ!
-
+        // IMPLEMENTAR UN QUICKSORT ACAAAA
+        quicksort(paisactual, 0, paisactual.getTamanio() - 1);
+        
         for (int i = 0; i < paisactual.getTamanio(); i++) { 
             cout << fixed << setprecision(2);
             cout << endl;

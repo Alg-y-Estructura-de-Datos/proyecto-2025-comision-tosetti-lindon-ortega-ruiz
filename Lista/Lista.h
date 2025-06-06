@@ -20,6 +20,8 @@ public:
 
   ~Lista();
 
+  Nodo<T>* getInicio();
+
   bool esVacia();
 
   int getTamanio();
@@ -82,6 +84,12 @@ Lista<T>& Lista<T>::operator=(const Lista<T>& otra) {
  * @tparam T
  */
 template <class T> Lista<T>::~Lista() { vaciar(); }
+
+//devolver inicio
+template <class T>
+Nodo<T>* Lista<T>::getInicio() {
+    return inicio;
+}
 
 /**
  * Metodo para saber si la lista esta vacia
