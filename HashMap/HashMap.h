@@ -30,6 +30,8 @@ public:
   bool esVacio();
 
   void print();
+
+  bool contieneClave(K clave);
 };
 
 template <class K, class T>
@@ -83,29 +85,31 @@ T HashMap<K, T>::get(K clave)
   }
 }
 
-template <class K, class T>
+template <class K, class T> // PUT MODIFICADO
 void HashMap<K, T>::put(K clave, T valor)
 {
   unsigned int pos = hashFuncP(clave) % tamanio;
-
-  //EL SIGUIENTE CODIGO HA SIDO MODIFICADOO
-  // Manejo de colisiones con linear probing
   unsigned int originalPos = pos;
-  do {
-    if (tabla[pos] == NULL) {
-      // Celda libre: insertar nueva entrada
-      tabla[pos] = new HashEntry<K, T>(clave, valor);
-      return;
-    } else if (tabla[pos]->getClave() == clave) {
-      // Clave ya existente: reemplazar valor
+  unsigned int intentos = 0; // Contador para evitar ciclos infinitos
+
+  // "LINEAR PROBING"
+  while (tabla[pos] != NULL && intentos < tamanio) {
+    if (tabla[pos]->getClave() == clave) {
+      // si ya existe la clave reemplazar valor
       tabla[pos]->setValor(valor);
       return;
     }
 
     pos = (pos + 1) % tamanio;
-  } while (pos != originalPos);
+    intentos++; 
+  }
 
-  throw std::runtime_error("HashMap lleno. No se pudo insertar.");
+  // Si encontramos una celda libre, insertamos la nueva entrada
+  if (intentos < tamanio) {
+    tabla[pos] = new HashEntry<K, T>(clave, valor);
+  } else {
+    throw std::runtime_error("HashMap lleno. No se pudo insertar.");
+  }
 }
 
 template <class K, class T>
@@ -151,5 +155,28 @@ void HashMap<K, T>::print()
     std::cout << std::endl;
   }
 }
+
+template <class K, class T>
+bool HashMap<K, T>::contieneClave(K clave) { //Implementamos una funcion para confirmar que existe la clave
+  unsigned int pos = hashFuncP(clave) % tamanio;
+
+  unsigned int originalPos = pos;
+
+  do {
+    if (tabla[pos] == NULL) {
+      return false; // No está en esta posición ni en ninguna posterior
+    }
+
+    if (tabla[pos]->getClave() == clave) {
+      return true;
+    }
+
+    pos = (pos + 1) % tamanio;
+
+  } while (pos != originalPos); // Volvemos al principio → no se encontró
+
+  return false;
+}
+
 
 #endif // U05_HASH_HASHMAP_HASHMAP_H_
