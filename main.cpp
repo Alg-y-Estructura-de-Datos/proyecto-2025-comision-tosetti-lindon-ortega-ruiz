@@ -19,14 +19,17 @@ int main() {
 
     loadFile (mapaVenta, sizeofmap); // Mapa de ventas por ID
     cout << sizeofmap << " lineas cargadas." << endl;
-    showTop5CiudadesPorMontoSegunPais(mapaVenta, sizeofmap);
 
-    
+    //El top 5 de ciudades con mayor monto de ventas por país
 
-    // Entre 65 y 108 IF para quicksort
+    Lista<string> claves_mapaPaises; // Almaceno las claves de mapaPaises (usadas en las siguientes funciones)
+    HashMap<string, Lista<ciudad_monto>> mapaCiudadesOrdenadas = getTop5CiudadesPorMontoSegunPais(mapaVenta, sizeofmap, claves_mapaPaises);
+    printTop5CiudadesPorMontoSegunPais(mapaCiudadesOrdenadas, claves_mapaPaises);
 
     // Monto total vendido por producto, discriminado por país
     
+
+
     // Promedio de ventas por categoría en cada país
 
     // Medio de envío más utilizado por país

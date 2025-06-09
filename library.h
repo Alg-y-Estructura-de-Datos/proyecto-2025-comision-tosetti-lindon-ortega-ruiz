@@ -178,13 +178,10 @@ void quicksortListaCM(Lista<ciudad_monto>& lista, int bot, int top) {
     }
 }
 
-void showTop5CiudadesPorMontoSegunPais(HashMap<unsigned int, Venta> &mapa, int &size) {
-        
+HashMap<string, Lista<ciudad_monto>> getTop5CiudadesPorMontoSegunPais(HashMap<unsigned int, Venta> &mapa, int &size, Lista<string> &claves_mapaPaises) {  
     // Top 5 ciudades con mayor monto de ventas por pais
-
     // MUY COOL --> Hicimos todo junto B)
     HashMap<string, Lista<ciudad_monto>> mapaPaises(31, hashString); //12 paises en sudamerica, ocupan el 40% --> bajas colisiones
-    Lista<string> claves_mapaPaises; // Almaceno las claves de mapaPaises
     // Repite por cada venta en el mapa 
     for (int i = 1; i <= size; i++) { //IF básico de conteo --> no cuenta
         Venta v = mapa.get(i);
@@ -218,8 +215,6 @@ void showTop5CiudadesPorMontoSegunPais(HashMap<unsigned int, Venta> &mapa, int &
     cout << "Top 5 ciudades por país según monto: " << endl;
     
     for (int i = 0; i < claves_mapaPaises.getTamanio(); i++) {
-        cout << "--------------------" << endl;
-        cout << "País: " << claves_mapaPaises.getDato(i) << endl;
 
         string clave = claves_mapaPaises.getDato(i);
 
@@ -233,7 +228,28 @@ void showTop5CiudadesPorMontoSegunPais(HashMap<unsigned int, Venta> &mapa, int &
         if (paisactual.getTamanio() > 1) {
             quicksortListaCM(paisactual, 0, paisactual.getTamanio() - 1);
         }
+
+        mapaPaises.put(clave, paisactual);
+    }
+    return mapaPaises;
+}
+
+void printTop5CiudadesPorMontoSegunPais(HashMap<string, Lista<ciudad_monto>> &mapaPaises, Lista<string> &claves) {
+    
+    for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
         
+        cout << "--------------------" << endl;
+        cout << "País: " << claves.getDato(i) << endl;
+        
+        string clave = claves.getDato(i);
+        
+        if (!mapaPaises.contieneClave(clave)) {
+            cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            continue;
+        }
+
+        Lista<ciudad_monto> paisactual = mapaPaises.get(clave);
+
         int j = min(4, (paisactual.getTamanio() - 1)); //posicion 4 o tamaño de la lista
 
         while (j >= 0) { // Imprime en orden descendente
