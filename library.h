@@ -37,13 +37,14 @@ struct categoria {
 
 struct medioenvio_cantidad {
     string nombre;
-    float ventas;
+    int ventas;
 };
 
 struct estadisticas_pais {
     Lista<ciudad_monto> ciudadesOrdenadasMonto;
     Lista<producto_monto> productosMontoTotal;
     Lista<categoria> categoriasPromedio;
+    Lista<medioenvio_cantidad> mediosDeEnvio;
 };
 
 unsigned int hashFunc(unsigned int clave) {
@@ -201,7 +202,33 @@ void quicksortListaCM(Lista<ciudad_monto>& lista, int bot, int top) {
     }
 }
 
-void ordenarTop5CiudadesPorMontoSegunPais(HashMap<string, estadisticas_pais> &mapa, Lista<string> &claves_mapaPaises) {  
+void bubbleSortMediosDeEnvio(HashMap<string, estadisticas_pais> &mapa, Lista<string>& claves) {
+    bool swapped = false;
+    int n;
+    //Se realizan pasadas hasta que no se realicen más intercambios
+    for (int i = 0; i < l - 1; i++) {
+        if_count++; //cuento el if del for i-loop
+        swapped = false;
+        //Se comparan todos los elementos de a 2
+        for (int j = 0; j < (l - i - 1); j++) {
+            if_count++; //cuento el if del for j-loop
+            if_count++; //cuento el if de abajo
+            if (a[j] > a[j+1]) {
+
+                swapped = true;
+                n = a[j];
+                a[j] = a[j + 1];
+                a[j + 1] = n;
+            }
+        }
+        if (!swapped) {
+        if_count++; //cuento cada if
+        break;
+        }
+    }
+}
+
+void ordenarTop5CiudadesPorMontoSegunPais(HashMap<string, estadisticas_pais>& mapa, Lista<string>& claves_mapaPaises) {  
     
     for (int i = 0; i < claves_mapaPaises.getTamanio(); i++) {
 
@@ -332,12 +359,6 @@ void printPromedioVentasPorCategoriaSegunPais(HashMap<string, estadisticas_pais>
     }
 }
 
-HashMap<string, medioenvio_cantidad> getMedioEnvioPorPais(HashMap<unsigned int, Venta> &mapa, int &size, Lista<string> &clavesPaises) {
-    HashMap<string, medioenvio_cantidad> mapaPaisesMedioEnvio(31, hashString); // segun cantidad de paises
-
-    return mapaPaisesMedioEnvio;    
-}
-
 HashMap<string, estadisticas_pais> getListasPorPais(HashMap<unsigned int, Venta>& mapa, Lista<string>& claves, int size) {
     
     HashMap<string, estadisticas_pais> mapaPaises(31, hashString); //12 paises en sudamerica, ocupan el 40% --> bajas colisiones
@@ -350,18 +371,22 @@ HashMap<string, estadisticas_pais> getListasPorPais(HashMap<unsigned int, Venta>
         ciudad_monto cm = {v.ciudad, v.monto_total};
         producto_monto p = {v.producto, v.monto_total};
         categoria c = {v.categoria, 0, v.monto_total, 1};
+        medioenvio_cantidad me = {v.medio_envio, 0};
 
         if (!mapaPaises.contieneClave(v.pais)) { //Si el pais todavia no existe
             Lista<ciudad_monto> Lciudades; //creo la lista de ciudades
             Lista<producto_monto> Lproductos; // creo la lista de productos
             Lista<categoria> Lcategorias; //creo la lista de categorias
+            Lista<medioenvio_cantidad> Lmedioenvio;
             Lciudades.insertarUltimo(cm); //inserto la ciudad actual
             Lproductos.insertarUltimo(p); //inserto el producto actual
             Lcategorias.insertarUltimo(c); //inserto el categoria actual
+            Lmedioenvio.insertarUltimo(me); 
             // Asigno las listas al struct
             estadisticas.ciudadesOrdenadasMonto = Lciudades; 
             estadisticas.productosMontoTotal = Lproductos; 
             estadisticas.categoriasPromedio = Lcategorias;
+            estadisticas.mediosDeEnvio = Lmedioenvio;
             mapaPaises.put(v.pais, estadisticas); //inserto la lista la hashmap
             claves.insertarUltimo(v.pais); //inserto la clave a la lista de claves
         } else { // Si el pais existe
@@ -393,6 +418,15 @@ HashMap<string, estadisticas_pais> getListasPorPais(HashMap<unsigned int, Venta>
                     foundCat = true; //Indico que se encontró el categoria y altero el monto
                 }
             }
+            Lista<medioenvio_cantidad> Lmedioenvio = mapaPaises.get(v.pais).mediosDeEnvio;
+            bool foundMed = false;
+            for (int j = 0; j < Lmedioenvio.getTamanio() && !foundMed; j++) { 
+                if (Lmedioenvio.getDato(j).nombre == v.medio_envio) {
+                    me.ventas = Lmedioenvio.getDato(j).ventas + 1;
+                    Lmedioenvio.reemplazar(j, me);
+                    foundMed = true; 
+                }
+            }
             if (!foundCiu) {
                 Lciudades.insertarUltimo(cm); //inserto la ciudad si no existe
             }
@@ -402,16 +436,19 @@ HashMap<string, estadisticas_pais> getListasPorPais(HashMap<unsigned int, Venta>
             if (!foundCat) {
                 Lcategorias.insertarUltimo(c); //inserto el categoria si no existe
             }
-
+            if (!foundMed) {
+                Lmedioenvio.insertarUltimo(me); //inserto el medio si no existe
+            }
             estadisticas.ciudadesOrdenadasMonto = Lciudades;
             estadisticas.productosMontoTotal = Lproductos;
             estadisticas.categoriasPromedio = Lcategorias; // Al finalizar esto, los promedios serán 0, pero los totales serán correctos
+            estadisticas.mediosDeEnvio = Lmedioenvio;
             mapaPaises.put(v.pais, estadisticas); // Realizo la modificacion en el hashMap
         }
     }
-    ordenarTop5CiudadesPorMontoSegunPais(mapaPaises, claves);
-    calcularPromedioVentasPorCategoriaSegunPais(mapaPaises, claves);
-
+    ordenarTop5CiudadesPorMontoSegunPais(mapaPaises, claves); // Ordeno de menor a mayor las ciudades por montos
+    calcularPromedioVentasPorCategoriaSegunPais(mapaPaises, claves); // Arreglo los promedios
+    bubbleSortMediosDeEnvio(mapaPaises, claves);
     return mapaPaises;
 }
 
