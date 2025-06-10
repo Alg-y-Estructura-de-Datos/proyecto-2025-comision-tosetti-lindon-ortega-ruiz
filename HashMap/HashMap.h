@@ -70,19 +70,24 @@ HashMap<K, T>::~HashMap()
   }
 }
 
-template <class K, class T>
+template <class K, class T> // MODIFICADO CON LINEAR PROBING
 T HashMap<K, T>::get(K clave)
 {
-  unsigned int pos = hashFuncP(clave) % tamanio;
-  if (tabla[pos] == NULL)
-  {
-    throw 404;
-  }
-  if(tabla[pos]->getClave() == clave){
-    return tabla[pos]->getValor();
-  }else{
-    throw 409;
-  }
+    unsigned int pos = hashFuncP(clave) % tamanio;
+    unsigned int originalPos = pos;
+
+    // Bucle de búsqueda con probing para localizar la clave
+    do {
+        if (tabla[pos] == NULL) {
+            throw 404;  // La clave no existe en la tabla.
+        }
+        if (tabla[pos]->getClave() == clave) {
+            return tabla[pos]->getValor();
+        }
+        pos = (pos + 1) % tamanio;
+    } while (pos != originalPos);
+
+    throw 409;  // Se recorrió toda la tabla sin encontrar la clave.
 }
 
 template <class K, class T> // PUT MODIFICADO

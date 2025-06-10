@@ -23,6 +23,18 @@ struct ciudad_monto {
     float total;
 };
 
+struct producto {
+    string nombre;
+    float total;
+};
+
+struct categoria {
+    string nombre;
+    float promedio;
+    float total;
+    int ventas;
+};
+
 unsigned int hashFunc(unsigned int clave) {
     return clave;  // Retorna el valor del ID como el índice hash
 }
@@ -30,7 +42,8 @@ unsigned int hashFunc(unsigned int clave) {
 unsigned int hashString(string clave) {
     unsigned int hash = 0;
     for (char c : clave) {
-        hash = 31 * hash + c;
+        hash = 131 * hash + c;
+        hash ^= (hash >> 5); // 'bitwise shift' --> mueve los bits para mejorar la distribucion
     }
     return hash;
 }
@@ -190,29 +203,26 @@ HashMap<string, Lista<ciudad_monto>> getTop5CiudadesPorMontoSegunPais(HashMap<un
         int pos = 0;
 
         if (!mapaPaises.contieneClave(v.pais)) { //Si el pais todavia no existe
-            Lista<ciudad_monto> ciudades; //creo la lista de ciudades
-            ciudades.insertarUltimo(cm); //inserto la ciudad actual
-            mapaPaises.put(v.pais, ciudades); //inserto la lista la hashmap
+            Lista<ciudad_monto> Lciudades; //creo la lista de ciudades
+            Lciudades.insertarUltimo(cm); //inserto la ciudad actual
+            mapaPaises.put(v.pais,Lciudades); //inserto la lista la hashmap
             claves_mapaPaises.insertarUltimo(v.pais); //inserto la clave a la lista de claves
         } else { // Si el pais existe
-            Lista<ciudad_monto> ciudades = mapaPaises.get(v.pais);
+            Lista<ciudad_monto> Lciudades = mapaPaises.get(v.pais);
             bool found = false;
-            for (int j = 0; j < ciudades.getTamanio() && !found; j++) { // reviso todas las ciudades de la lista
-                if (ciudades.getDato(j).ciudad == v.ciudad) {
-                    cm.total = ciudades.getDato(j).total + v.monto_total;
-                    ciudades.reemplazar(j, cm);
+            for (int j = 0; j < Lciudades.getTamanio() && !found; j++) { // reviso todas las ciudades de la lista
+                if (Lciudades.getDato(j).ciudad == v.ciudad) {
+                    cm.total = Lciudades.getDato(j).total + v.monto_total;
+                    Lciudades.reemplazar(j, cm);
                     found = true; //Indico que se encontró la ciudad y altero el monto
                 }
             }
             if (!found) {
-                ciudades.insertarUltimo(cm); //inserto la ciudad si no existe
+                Lciudades.insertarUltimo(cm); //inserto la ciudad si no existe
             }
-            mapaPaises.put(v.pais, ciudades);
+            mapaPaises.put(v.pais, Lciudades);
         }
     }
-    
-    cout << endl << "------------------------" << endl;
-    cout << "Top 5 ciudades por país según monto: " << endl;
     
     for (int i = 0; i < claves_mapaPaises.getTamanio(); i++) {
 
@@ -236,6 +246,9 @@ HashMap<string, Lista<ciudad_monto>> getTop5CiudadesPorMontoSegunPais(HashMap<un
 
 void printTop5CiudadesPorMontoSegunPais(HashMap<string, Lista<ciudad_monto>> &mapaPaises, Lista<string> &claves) {
     
+    cout << endl << "------------------------" << endl;
+    cout << "Top 5 ciudades por país según monto: " << endl;
+
     for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
         
         cout << "--------------------" << endl;
@@ -259,6 +272,148 @@ void printTop5CiudadesPorMontoSegunPais(HashMap<string, Lista<ciudad_monto>> &ma
             cout << "Monto: " << paisactual.getDato(j).total << endl; 
             cout << endl;
             j--;
+        }
+    }
+}
+
+HashMap<string, Lista<producto>> getMontoTotalPorProductoSegunPais(HashMap<unsigned int, Venta> &mapa, int &size) {
+    
+    HashMap<string, Lista<producto>> mapaPaises(31, hashString);
+
+    for (int i = 1; i <= size; i++) { //IF básico de conteo --> no cuenta
+        Venta v = mapa.get(i);
+        producto p = {v.producto, v.monto_total};
+        int pos = 0;
+
+        if (!mapaPaises.contieneClave(v.pais)) { //Si el pais todavia no existe
+            Lista<producto> Lproductos; //creo la lista de productos
+            Lproductos.insertarUltimo(p); //inserto el producto actual
+            mapaPaises.put(v.pais, Lproductos); //inserto la lista la hashmap
+        } else { // Si el pais existe
+            Lista<producto> Lproductos = mapaPaises.get(v.pais);
+            bool found = false;
+            for (int j = 0; j < Lproductos.getTamanio() && !found; j++) { // reviso todas las productos de la lista
+                if (Lproductos.getDato(j).nombre == v.producto) {
+                    p.total = Lproductos.getDato(j).total + v.monto_total;
+                    Lproductos.reemplazar(j, p);
+                    found = true; //Indico que se encontró el producto y altero el monto
+                }
+            }
+            if (!found) {
+                Lproductos.insertarUltimo(p); //inserto el producto si no existe
+            }
+            mapaPaises.put(v.pais, Lproductos); // remplazo el valor en mapaPaises
+        }
+    }
+
+    return mapaPaises;
+}
+
+void printMontoTotalPorProductoSegunPais(HashMap<string, Lista<producto>> &mapaPaises, Lista<string> &claves) {
+    cout << endl << "------------------------" << endl;
+    cout << "Monto total por producto por país: " << endl;
+
+    for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
+        
+        cout << "--------------------" << endl;
+        cout << "País: " << claves.getDato(i) << endl;
+        
+        string clave = claves.getDato(i);
+        
+        if (!mapaPaises.contieneClave(clave)) {
+            cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            continue;
+        }
+
+        Lista<producto> paisactual = mapaPaises.get(clave);
+
+        for (int j = 0; j < paisactual.getTamanio(); j++) { // Imprime todos los productos
+            cout << fixed << setprecision(2);
+            cout << endl;
+            cout << "Producto: " << paisactual.getDato(j).nombre << endl;
+            cout << "Monto Total: " << paisactual.getDato(j).total << endl; 
+            cout << endl;
+        }
+    }
+}
+
+HashMap<string, Lista<categoria>> getPromedioVentasPorCategoriaSegunPais(HashMap<unsigned int, Venta> &mapa, int &size, Lista<string> &clavesPaises) {
+    HashMap<string, Lista<categoria>> mapaPaises(23, hashString); // numero primo mas cercano a (categorias actuales * 4)
+
+    for (int i = 1; i <= size; i++) { //IF básico de conteo --> no cuenta
+        Venta v = mapa.get(i);
+        categoria c = {v.categoria, 0, v.monto_total, 1};
+        int pos = 0;
+
+        if (!mapaPaises.contieneClave(v.pais)) { //Si el pais todavia no existe
+            Lista<categoria> Lcategorias; //creo la lista de categorias
+            Lcategorias.insertarUltimo(c); //inserto el categoria actual
+            mapaPaises.put(v.pais, Lcategorias); //inserto la lista la hashmap
+        } else { // Si el pais existe
+            Lista<categoria> Lcategorias = mapaPaises.get(v.pais);
+            bool found = false;
+            for (int j = 0; j < Lcategorias.getTamanio() && !found; j++) { // reviso todas las categorias de la lista
+                if (Lcategorias.getDato(j).nombre == v.categoria) {
+                    c.total = Lcategorias.getDato(j).total + v.monto_total;
+                    c.ventas = Lcategorias.getDato(j).ventas + 1;
+                    Lcategorias.reemplazar(j, c);
+                    found = true; //Indico que se encontró el categoria y altero el monto
+                }
+            }
+            if (!found) {
+                Lcategorias.insertarUltimo(c); //inserto el categoria si no existe
+            }
+            mapaPaises.put(v.pais, Lcategorias); // remplazo el valor en mapaPaises
+        }
+    } // Al finalizar esto, los promedios serán 0, pero los totales serán correctos
+
+    for (int i = 0; i < clavesPaises.getTamanio(); i++) {
+
+        string clave = clavesPaises.getDato(i);
+
+        if (!mapaPaises.contieneClave(clave)) {
+            cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            continue;
+        }
+
+        Lista<categoria> paisactual = mapaPaises.get(clave);
+
+        for (int j = 0; j < paisactual.getTamanio(); j++) {
+            categoria c = paisactual.getDato(j);
+            c.promedio = c.total / c.ventas;
+            paisactual.reemplazar(j, c);
+        }
+
+        mapaPaises.put(clave, paisactual);
+    }
+
+    return mapaPaises;
+}
+
+void printPromedioVentasPorCategoriaSegunPais(HashMap<string, Lista<categoria>> &mapaPaises, Lista<string> &claves) {
+    cout << endl << "------------------------" << endl;
+    cout << "Promedio ventas por categorias: " << endl;
+
+    for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
+        
+        cout << "--------------------" << endl;
+        cout << "País: " << claves.getDato(i) << endl;
+        
+        string clave = claves.getDato(i);
+        
+        if (!mapaPaises.contieneClave(clave)) {
+            cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            continue;
+        }
+
+        Lista<categoria> paisactual = mapaPaises.get(clave);
+
+        for (int j = 0; j < paisactual.getTamanio(); j++) { // Imprime todos los productos
+            cout << fixed << setprecision(2);
+            cout << endl;
+            cout << "Categoria: " << paisactual.getDato(j).nombre << endl;
+            cout << "Promedio: " << paisactual.getDato(j).promedio << endl; 
+            cout << endl;
         }
     }
 }
