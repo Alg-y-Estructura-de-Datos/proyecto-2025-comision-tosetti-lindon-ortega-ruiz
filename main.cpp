@@ -11,7 +11,7 @@ using namespace std;
 
 void printMenu(int n);
 
-int main() {
+int main(void) {
     int sizeofmap = 0;
     // CARGAR LOS DATOS - A través de una funcion en un archivo cpp
     cout << "Cargando datos..." << endl;
@@ -24,8 +24,6 @@ int main() {
 
     // Extract data from map --> returns struct
     HashMap<string, estadisticas_pais> mapaPaises = getListasPorPais(mapaVenta, claves_mapaPaises, sizeofmap);
-
-    // Medio de envío más utilizado por país
 
     // Medio de envío más utilizado por categoría
 
@@ -61,6 +59,13 @@ int main() {
                 break;
             case 3:
                 printPromedioVentasPorCategoriaSegunPais(mapaPaises, claves_mapaPaises);
+                break;
+            case 4:
+                printMedioEnvioMasUtilizadoPorPais(mapaPaises, claves_mapaPaises);
+                break;
+            case 7:
+                printEstadoDeEnvioMasFrencuentePorPais(mapaPaises, claves_mapaPaises);
+                break;
             default:
                 cout << "Unvalid option. Leaving...";
                 break;

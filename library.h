@@ -40,11 +40,17 @@ struct medioenvio_cantidad {
     int ventas;
 };
 
+struct estadoenvio_cantidad {
+    string nombre;
+    int ventas;
+};
+
 struct estadisticas_pais {
     Lista<ciudad_monto> ciudadesOrdenadasMonto;
     Lista<producto_monto> productosMontoTotal;
     Lista<categoria> categoriasPromedio;
     Lista<medioenvio_cantidad> mediosDeEnvio;
+    Lista<estadoenvio_cantidad> estadosDeEnvio;
 };
 
 unsigned int hashFunc(unsigned int clave) {
@@ -202,29 +208,57 @@ void quicksortListaCM(Lista<ciudad_monto>& lista, int bot, int top) {
     }
 }
 
-void bubbleSortMediosDeEnvio(HashMap<string, estadisticas_pais> &mapa, Lista<string>& claves) {
-    bool swapped = false;
-    int n;
-    //Se realizan pasadas hasta que no se realicen más intercambios
-    for (int i = 0; i < l - 1; i++) {
-        if_count++; //cuento el if del for i-loop
-        swapped = false;
-        //Se comparan todos los elementos de a 2
-        for (int j = 0; j < (l - i - 1); j++) {
-            if_count++; //cuento el if del for j-loop
-            if_count++; //cuento el if de abajo
-            if (a[j] > a[j+1]) {
+void bubbleSortMediosyEstadosDeEnvio(HashMap<string, estadisticas_pais> &mapa, Lista<string>& claves) {
+    int size_c = claves.getTamanio();
+    
+    for (int i = 0; i < size_c; i++) {
+        string clave = claves.getDato(i);
+        estadisticas_pais estadisticas = mapa.get(clave);
+        Nodo<medioenvio_cantidad>* inicio_m = estadisticas.mediosDeEnvio.getInicio();
+        Nodo<estadoenvio_cantidad>* inicio_e = estadisticas.estadosDeEnvio.getInicio();
 
-                swapped = true;
-                n = a[j];
-                a[j] = a[j + 1];
-                a[j + 1] = n;
-            }
+        if (inicio_m != nullptr) {
+            bool swapped;
+            do {
+                swapped = false;
+                Nodo<medioenvio_cantidad>* actual = inicio_m;
+                Nodo<medioenvio_cantidad>* siguiente = inicio_m->getSiguiente();
+
+                while (siguiente != nullptr) {
+                    if (actual->getDato().ventas < siguiente->getDato().ventas) {
+                        // Intercambiamos los datos
+                        medioenvio_cantidad temp = actual->getDato();
+                        actual->setDato(siguiente->getDato());
+                        siguiente->setDato(temp);
+                        swapped = true;
+                    }
+                    actual = siguiente;
+                    siguiente = siguiente->getSiguiente();
+                }
+            } while (swapped);
         }
-        if (!swapped) {
-        if_count++; //cuento cada if
-        break;
+
+        if (inicio_e != nullptr) {
+            bool swapped;
+            do {
+                swapped = false;
+                Nodo<estadoenvio_cantidad>* actual = inicio_e;
+                Nodo<estadoenvio_cantidad>* siguiente = inicio_e->getSiguiente();
+
+                while (siguiente != nullptr) {
+                    if (actual->getDato().ventas < siguiente->getDato().ventas) {
+                        // Intercambiamos los datos
+                        estadoenvio_cantidad temp = actual->getDato();
+                        actual->setDato(siguiente->getDato());
+                        siguiente->setDato(temp);
+                        swapped = true;
+                    }
+                    actual = siguiente;
+                    siguiente = siguiente->getSiguiente();
+                }
+            } while (swapped);
         }
+        mapa.put(clave, estadisticas);
     }
 }
 
@@ -235,7 +269,7 @@ void ordenarTop5CiudadesPorMontoSegunPais(HashMap<string, estadisticas_pais>& ma
         string clave = claves_mapaPaises.getDato(i);
 
         if (!mapa.contieneClave(clave)) {
-            cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
             continue;
         }
 
@@ -251,18 +285,18 @@ void ordenarTop5CiudadesPorMontoSegunPais(HashMap<string, estadisticas_pais>& ma
 
 void printTop5CiudadesPorMontoSegunPais(HashMap<string, estadisticas_pais> &mapaPaises, Lista<string> &claves) {
     
-    cout << endl << "------------------------" << endl;
-    cout << "Top 5 ciudades por país según monto: " << endl;
+    std::cout << endl << "------------------------" << endl;
+    std::cout << "Top 5 ciudades por país según monto: " << endl;
 
     for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
         
-        cout << "--------------------" << endl;
-        cout << "País: " << claves.getDato(i) << endl;
+        std::cout << "--------------------" << endl;
+        std::cout << "País: " << claves.getDato(i) << endl;
         
         string clave = claves.getDato(i);
         
         if (!mapaPaises.contieneClave(clave)) {
-            cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
             continue;
         }
 
@@ -271,40 +305,40 @@ void printTop5CiudadesPorMontoSegunPais(HashMap<string, estadisticas_pais> &mapa
         int j = min(4, (paisactual.getTamanio() - 1)); //posicion 4 o tamaño de la lista
 
         while (j >= 0) { // Imprime en orden descendente
-            cout << fixed << setprecision(2);
-            cout << endl;
-            cout << "Ciudad: " << paisactual.getDato(j).ciudad << endl;
-            cout << "Monto: " << paisactual.getDato(j).total << endl; 
-            cout << endl;
+            std::cout << fixed << setprecision(2);
+            std::cout << endl;
+            std::cout << "Ciudad: " << paisactual.getDato(j).ciudad << endl;
+            std::cout << "Monto: " << paisactual.getDato(j).total << endl; 
+            std::cout << endl;
             j--;
         }
     }
 }
 
 void printMontoTotalPorProductoSegunPais(HashMap<string, estadisticas_pais> &mapaPaises, Lista<string> &claves) {
-    cout << endl << "------------------------" << endl;
-    cout << "Monto total por producto por país: " << endl;
+    std::cout << endl << "------------------------" << endl;
+    std::cout << "Monto total por producto por país: " << endl;
 
     for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
         
-        cout << "--------------------" << endl;
-        cout << "País: " << claves.getDato(i) << endl;
-        
         string clave = claves.getDato(i);
+
+        std::cout << "--------------------" << endl;
+        std::cout << "País: " << clave << endl;
         
         if (!mapaPaises.contieneClave(clave)) {
-            cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
             continue;
         }
 
         Lista<producto_monto> paisactual = mapaPaises.get(clave).productosMontoTotal;
 
         for (int j = 0; j < paisactual.getTamanio(); j++) { // Imprime todos los productos
-            cout << fixed << setprecision(2);
-            cout << endl;
-            cout << "Producto: " << paisactual.getDato(j).nombre << endl;
-            cout << "Monto Total: " << paisactual.getDato(j).total << endl; 
-            cout << endl;
+            std::cout << fixed << setprecision(2);
+            std::cout << endl;
+            std::cout << "Producto: " << paisactual.getDato(j).nombre << endl;
+            std::cout << "Monto Total: " << paisactual.getDato(j).total << endl; 
+            std::cout << endl;
         }
     }
 }
@@ -315,7 +349,7 @@ void calcularPromedioVentasPorCategoriaSegunPais(HashMap<string, estadisticas_pa
         string clave = clavesPaises.getDato(i);
 
         if (!mapa.contieneClave(clave)) {
-            cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
             continue;
         }
 
@@ -332,30 +366,72 @@ void calcularPromedioVentasPorCategoriaSegunPais(HashMap<string, estadisticas_pa
 }
 
 void printPromedioVentasPorCategoriaSegunPais(HashMap<string, estadisticas_pais> &mapaPaises, Lista<string> &claves) {
-    cout << endl << "------------------------" << endl;
-    cout << "Promedio ventas por categorias: " << endl;
+    std::cout << endl << "------------------------" << endl;
+    std::cout << "Promedio ventas por categorias: " << endl;
 
     for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
         
-        cout << "--------------------" << endl;
-        cout << "País: " << claves.getDato(i) << endl;
-        
         string clave = claves.getDato(i);
+
+        std::cout << "--------------------" << endl;
+        std::cout << "País: " << clave << endl;
+        
         
         if (!mapaPaises.contieneClave(clave)) {
-            cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
             continue;
         }
 
         Lista<categoria> paisactual = mapaPaises.get(clave).categoriasPromedio;
 
         for (int j = 0; j < paisactual.getTamanio(); j++) { // Imprime todos los productos
-            cout << fixed << setprecision(2);
-            cout << endl;
-            cout << "Categoria: " << paisactual.getDato(j).nombre << endl;
-            cout << "Promedio: " << paisactual.getDato(j).promedio << endl; 
-            cout << endl;
+            std::cout << fixed << setprecision(2);
+            std::cout << endl;
+            std::cout << "Categoria: " << paisactual.getDato(j).nombre << endl;
+            std::cout << "Promedio: " << paisactual.getDato(j).promedio << endl; 
+            std::cout << endl;
         }
+    }
+}
+
+void printMedioEnvioMasUtilizadoPorPais(HashMap<string, estadisticas_pais> &mapaPaises, Lista<string> &claves) {
+    std::cout << endl << "------------------------" << endl;
+    std::cout << "Medio de envío más utilizado por país: " << endl;
+
+    for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
+        string clave = claves.getDato(i);
+        
+        std::cout << "--------------------" << endl;
+        std::cout << "País: " << clave << endl;
+        
+        if (!mapaPaises.contieneClave(clave)) {
+            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            continue;
+        }
+
+        cout << "El medio de envío más utilizado en " << clave << " es " << mapaPaises.get(clave).mediosDeEnvio.getDato(0).nombre << endl;
+    }
+}
+
+void printEstadoDeEnvioMasFrencuentePorPais(HashMap<string, estadisticas_pais> &mapaPaises, Lista<string> &claves) {
+    std::cout << endl << "------------------------" << endl;
+    std::cout << "Estado de Envio Mas Frecuente Por Pais: " << endl;
+
+    for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
+        
+        string clave = claves.getDato(i);
+        
+        std::cout << "--------------------" << endl;
+        std::cout << "País: " << clave << endl;
+        
+        
+        if (!mapaPaises.contieneClave(clave)) {
+            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            continue;
+        }
+
+        cout << "El estado de envío más frecuente en " << clave << " es " << mapaPaises.get(clave).estadosDeEnvio.getDato(0).nombre << endl;
+        cout << "Cantidad: " << mapaPaises.get(clave).estadosDeEnvio.getDato(0).ventas << endl;
     }
 }
 
@@ -365,28 +441,31 @@ HashMap<string, estadisticas_pais> getListasPorPais(HashMap<unsigned int, Venta>
 
     for (int i = 1; i <= size; i++) { //IF básico de conteo --> no cuenta
         Venta v = mapa.get(i);
-        // Creo la estructura de listas
-        estadisticas_pais estadisticas;
+        estadisticas_pais estadisticas; // Estructura que contiene las listas de cada pais
         // creo el objeto ciudad monto (si no existe la ciudad, se insertará; si ya existe se usa para reemplazar el valor del monto)
         ciudad_monto cm = {v.ciudad, v.monto_total};
         producto_monto p = {v.producto, v.monto_total};
         categoria c = {v.categoria, 0, v.monto_total, 1};
-        medioenvio_cantidad me = {v.medio_envio, 0};
+        medioenvio_cantidad me = {v.medio_envio, 1};
+        estadoenvio_cantidad es = {v.estado_envio, 1};
 
         if (!mapaPaises.contieneClave(v.pais)) { //Si el pais todavia no existe
             Lista<ciudad_monto> Lciudades; //creo la lista de ciudades
             Lista<producto_monto> Lproductos; // creo la lista de productos
             Lista<categoria> Lcategorias; //creo la lista de categorias
             Lista<medioenvio_cantidad> Lmedioenvio;
+            Lista<estadoenvio_cantidad> Lestadoenvio;
             Lciudades.insertarUltimo(cm); //inserto la ciudad actual
             Lproductos.insertarUltimo(p); //inserto el producto actual
             Lcategorias.insertarUltimo(c); //inserto el categoria actual
             Lmedioenvio.insertarUltimo(me); 
+            Lestadoenvio.insertarUltimo(es);
             // Asigno las listas al struct
             estadisticas.ciudadesOrdenadasMonto = Lciudades; 
             estadisticas.productosMontoTotal = Lproductos; 
             estadisticas.categoriasPromedio = Lcategorias;
             estadisticas.mediosDeEnvio = Lmedioenvio;
+            estadisticas.estadosDeEnvio = Lestadoenvio;
             mapaPaises.put(v.pais, estadisticas); //inserto la lista la hashmap
             claves.insertarUltimo(v.pais); //inserto la clave a la lista de claves
         } else { // Si el pais existe
@@ -427,6 +506,16 @@ HashMap<string, estadisticas_pais> getListasPorPais(HashMap<unsigned int, Venta>
                     foundMed = true; 
                 }
             }
+            Lista<estadoenvio_cantidad> Lestadoenvio = mapaPaises.get(v.pais).estadosDeEnvio;
+            bool foundEst = false;
+            for (int j = 0; j < Lestadoenvio.getTamanio() && !foundEst; j++) {
+                if (Lestadoenvio.getDato(j).nombre == v.estado_envio) {
+                    es.ventas = Lestadoenvio.getDato(j).ventas + 1;
+                    Lestadoenvio.reemplazar(j, es);
+                    foundEst = true; 
+                }
+            }
+
             if (!foundCiu) {
                 Lciudades.insertarUltimo(cm); //inserto la ciudad si no existe
             }
@@ -439,16 +528,21 @@ HashMap<string, estadisticas_pais> getListasPorPais(HashMap<unsigned int, Venta>
             if (!foundMed) {
                 Lmedioenvio.insertarUltimo(me); //inserto el medio si no existe
             }
+            if (!foundEst) {
+                Lestadoenvio.insertarUltimo(es); //inserto el estado si no existe
+            }
+
             estadisticas.ciudadesOrdenadasMonto = Lciudades;
             estadisticas.productosMontoTotal = Lproductos;
             estadisticas.categoriasPromedio = Lcategorias; // Al finalizar esto, los promedios serán 0, pero los totales serán correctos
             estadisticas.mediosDeEnvio = Lmedioenvio;
+            estadisticas.estadosDeEnvio = Lestadoenvio;
             mapaPaises.put(v.pais, estadisticas); // Realizo la modificacion en el hashMap
         }
     }
     ordenarTop5CiudadesPorMontoSegunPais(mapaPaises, claves); // Ordeno de menor a mayor las ciudades por montos
     calcularPromedioVentasPorCategoriaSegunPais(mapaPaises, claves); // Arreglo los promedios
-    bubbleSortMediosDeEnvio(mapaPaises, claves);
+    bubbleSortMediosyEstadosDeEnvio(mapaPaises, claves);
     return mapaPaises;
 }
 
