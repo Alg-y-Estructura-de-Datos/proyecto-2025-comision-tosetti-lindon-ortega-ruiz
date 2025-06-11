@@ -3,6 +3,7 @@
 #include <sstream> // Permite trabajar con las lineas de csv como strings (stringstream, getline)
 #include <fstream> // Permite leer y escribir archivo externos (ifstream)
 #include <iomanip> // Permite manipular cout para que no trunque automaticamente los float
+#include <ctime>
 #include "HashMap\HashMap.h" // CAMBIAR POR HASHMAP LIST PARA USAR MEJOR MANEJO DE COLISIONES
 #include "Lista\Lista.h"
 #include "Cola\Cola.h"
@@ -19,23 +20,19 @@ int main(void) {
 
     loadFile (mapaVenta, sizeofmap); // Mapa de ventas por ID
     cout << sizeofmap << " lineas cargadas." << endl;
-
+    
     Lista<string> claves_mapaPaises; // Almaceno las claves de mapaPaises (usadas en las siguientes funciones)
 
     // Extract data from map --> returns struct
     HashMap<string, estadisticas_pais> mapaPaises = getListasPorPais(mapaVenta, claves_mapaPaises, sizeofmap);
+    
+    Lista<string> claves_mapaCategorias;
+    
+    HashMap<string, Lista<medioenvio_cantidad>> mapaCategorias = getListasPorCategoria(mapaVenta, claves_mapaCategorias, sizeofmap);
 
-    // Medio de envío más utilizado por categoría
+    Lista<producto_cantidad> listaOrdenadaProductosPorCantidad = getListaOrdenadaProductos(mapaVenta, sizeofmap);
 
-    // Día con mayor cantidad de ventas (por monto de dinero) en toda la base de datos
-
-    // Estado de envío más frecuente por país
-
-    // Producto más vendido en cantidad total (no en dinero, sino en unidades)
-
-    // Producto menos vendido en cantidad total
-
-
+    dia_montos fechaConMasVentas = getDiaConMayorCantidadVentas(mapaVenta, sizeofmap);
     // MENU --> ~ 9 opciones
         // Modificaciones
             // Realizar y corremos el procesamiento
@@ -63,8 +60,20 @@ int main(void) {
             case 4:
                 printMedioEnvioMasUtilizadoPorPais(mapaPaises, claves_mapaPaises);
                 break;
+            case 5:
+                printMedioEnvioMasUtilizadoPorCategoria(mapaCategorias, claves_mapaCategorias);
+                break;
+            case 6:
+                printDiaMayorCantidadVentas(fechaConMasVentas);
+                break;
             case 7:
                 printEstadoDeEnvioMasFrencuentePorPais(mapaPaises, claves_mapaPaises);
+                break;
+            case 8:
+                printProductoMasVendido(listaOrdenadaProductosPorCantidad);
+                break;
+            case 9:
+                printProductoMenosVendido(listaOrdenadaProductosPorCantidad);
                 break;
             default:
                 cout << "Unvalid option. Leaving...";

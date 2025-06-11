@@ -6,13 +6,15 @@
 #include <fstream> // Permite leer y escribir archivo externos (ifstream)
 #include <iomanip>
 #include <math.h>
+#include <ctime>
 #include "Lista\Lista.h"
 #include "HashMap\HashMap.h" // CAMBIAR POR HASHMAP LIST PARA USAR MEJOR MANEJO DE COLISIONES
 #define NOMBRE_ARCHIVO ("C:/Users/mairi/source/proyecto-2025-comision-tosetti-lindon-ortega-ruiz/ventas_sudamerica.csv")
 using namespace std;
 
 struct Venta {
-    string fecha, pais, ciudad, cliente, producto, categoria, medio_envio, estado_envio;
+    string pais, ciudad, cliente, producto, categoria, medio_envio, estado_envio;
+    tm fecha;
     int id, cantidad;
     float precio_unitario, monto_total;
 };
@@ -45,12 +47,22 @@ struct estadoenvio_cantidad {
     int ventas;
 };
 
+struct producto_cantidad {
+    string producto;
+    int cantidad;
+};
+
 struct estadisticas_pais {
     Lista<ciudad_monto> ciudadesOrdenadasMonto;
     Lista<producto_monto> productosMontoTotal;
     Lista<categoria> categoriasPromedio;
     Lista<medioenvio_cantidad> mediosDeEnvio;
     Lista<estadoenvio_cantidad> estadosDeEnvio;
+};
+
+struct dia_montos {
+    tm fecha;
+    float total;
 };
 
 unsigned int hashFunc(unsigned int clave) {
@@ -72,6 +84,20 @@ auto trim = [](string s) { //FUNCION BUSCADA EN INTERNET PARA ASEGURAR QUE LOS D
     return s;
 };
 
+tm stringToDateTime(const string& fechaStr) { //CONVIERTO A FECHA
+    tm fecha = {};
+    istringstream ss(fechaStr);
+    
+    ss >> get_time(&fecha, "%d/%m/%Y %H:%M"); // Formato: DD/MM/YYYY HH:MM
+
+    if (ss.fail()) {
+        throw runtime_error("Error al convertir la cadena a fecha.");
+    }
+
+    return fecha;
+}
+
+
 //Función carga de archivo csv
 void loadFile (HashMap<unsigned int, Venta> &mapa, int &size) {
     
@@ -87,10 +113,10 @@ void loadFile (HashMap<unsigned int, Venta> &mapa, int &size) {
         Venta v;
 
         stringstream stream(linea); // Convertir la cadena a un stream
-        string id_venta, cantidad, precio_unitario, monto_total;
+        string id_venta, fecha, cantidad, precio_unitario, monto_total;
         // Extraer todos los valores de esa fila
         getline(stream, id_venta, delimitador);
-        getline(stream, v.fecha, delimitador);
+        getline(stream, fecha, delimitador);
         getline(stream, v.pais, delimitador);
         getline(stream, v.ciudad, delimitador);
         getline(stream, v.cliente, delimitador);
@@ -109,6 +135,7 @@ void loadFile (HashMap<unsigned int, Venta> &mapa, int &size) {
         v.monto_total = stof(monto_total);
         v.pais = trim(v.pais);
         v.ciudad = trim(v.ciudad);
+        v.fecha = stringToDateTime(fecha);
         mapa.put(v.id, v);
         size++;
     }
@@ -116,7 +143,7 @@ void loadFile (HashMap<unsigned int, Venta> &mapa, int &size) {
     archivo.close();
 }
 
-Nodo<ciudad_monto>* obtenerNodo(Lista<ciudad_monto>& lista, int pos) { // Para trabajar con punteros, obtenemos el nodo
+Nodo<ciudad_monto>* obtenerNodoCM(Lista<ciudad_monto>& lista, int pos) { // Para trabajar con punteros, obtenemos el nodo
     if (pos < 0 || pos >= lista.getTamanio()) return nullptr;
     Nodo<ciudad_monto>* aux = lista.getInicio(); // el auxiliar es el primer nodo de la lista
     int i = 0;
@@ -127,10 +154,10 @@ Nodo<ciudad_monto>* obtenerNodo(Lista<ciudad_monto>& lista, int pos) { // Para t
     return aux; // devuelve el nodo correspondiente a la posicion
 }
 
-int posListAvg(Lista<ciudad_monto>& lista, int bot, int top) { //Obtengo la posición del promedio de la lista
+int posListAvgCM(Lista<ciudad_monto>& lista, int bot, int top) { //Obtengo la posición del promedio de la lista
     if (top - bot <= 0 || bot < 0 || top > lista.getTamanio()) return -1;
 
-    Nodo<ciudad_monto>* nodo = obtenerNodo(lista, bot);
+    Nodo<ciudad_monto>* nodo = obtenerNodoCM(lista, bot);
     if (!nodo) return -1;
 
     float suma = 0;
@@ -141,7 +168,7 @@ int posListAvg(Lista<ciudad_monto>& lista, int bot, int top) { //Obtengo la posi
     }
     float promedio = suma/(top - bot);
 
-    nodo = obtenerNodo(lista,bot);
+    nodo = obtenerNodoCM(lista,bot);
     int pos = bot;
     float dif_min = abs(nodo->getDato().total - promedio), dif_actual;
     for (int i = bot; i <= top && nodo; ++i) {
@@ -156,14 +183,14 @@ int posListAvg(Lista<ciudad_monto>& lista, int bot, int top) { //Obtengo la posi
 }
 
 // funcion de particion para simplificar el quicksort, divide en mayores y menores que el pivote 
-int partition(Lista<ciudad_monto>& lista, int bot, int top) { //
+int partitionCM(Lista<ciudad_monto>& lista, int bot, int top) { //
     if (bot > top) return bot;
 
-    int pivotIndex = posListAvg(lista, bot, top);
+    int pivotIndex = posListAvgCM(lista, bot, top);
     if (pivotIndex == -1) return bot;
 
-    Nodo<ciudad_monto>* pivotNodo = obtenerNodo(lista, pivotIndex); // el pivot es el promedio de la seccion
-    Nodo<ciudad_monto>* pivotMedio = obtenerNodo(lista, (bot + top)/2); //Obtengo el nodo del medio
+    Nodo<ciudad_monto>* pivotNodo = obtenerNodoCM(lista, pivotIndex); // el pivot es el promedio de la seccion
+    Nodo<ciudad_monto>* pivotMedio = obtenerNodoCM(lista, (bot + top)/2); //Obtengo el nodo del medio
     if (!pivotNodo || !pivotMedio) return bot;
     
     float pivot = pivotNodo->getDato().total; //obtengo el total del pivot
@@ -176,16 +203,16 @@ int partition(Lista<ciudad_monto>& lista, int bot, int top) { //
     int i = bot, j = top;
 
     while (i <= j) {
-        Nodo<ciudad_monto>* nodoI = obtenerNodo(lista, i);
+        Nodo<ciudad_monto>* nodoI = obtenerNodoCM(lista, i);
         while (nodoI && nodoI->getDato().total < pivot) {
             i++;
-            nodoI = obtenerNodo(lista, i);
+            nodoI = obtenerNodoCM(lista, i);
         }
 
-        Nodo<ciudad_monto>* nodoJ = obtenerNodo(lista, j);
+        Nodo<ciudad_monto>* nodoJ = obtenerNodoCM(lista, j);
         while (nodoJ && nodoJ->getDato().total > pivot) {
             j--;
-            nodoJ = obtenerNodo(lista, j);
+            nodoJ = obtenerNodoCM(lista, j);
         }
 
         if (i <= j && nodoI && nodoJ) {
@@ -202,63 +229,150 @@ int partition(Lista<ciudad_monto>& lista, int bot, int top) { //
 // Implementación de Quicksort para Lista Enlazada
 void quicksortListaCM(Lista<ciudad_monto>& lista, int bot, int top) {
     if (bot < top) {
-        int pi = partition(lista, bot, top);
+        int pi = partitionCM(lista, bot, top);
         quicksortListaCM(lista, bot, pi);
         quicksortListaCM(lista, pi + 1, top);
     }
 }
 
-void bubbleSortMediosyEstadosDeEnvio(HashMap<string, estadisticas_pais> &mapa, Lista<string>& claves) {
-    int size_c = claves.getTamanio();
+Nodo<producto_cantidad>* obtenerNodoPC(Lista<producto_cantidad>& lista, int pos) { // Para trabajar con punteros, obtenemos el nodo
+    if (pos < 0 || pos >= lista.getTamanio()) return nullptr;
+    Nodo<producto_cantidad>* aux = lista.getInicio(); // el auxiliar es el primer nodo de la lista
+    int i = 0;
+    while (aux != nullptr && i < pos) { // busco la posicion
+        aux = aux->getSiguiente();
+        i++;
+    }
+    return aux; // devuelve el nodo correspondiente a la posicion
+}
+
+int posListAvgPC(Lista<producto_cantidad>& lista, int bot, int top) { //Obtengo la posición del promedio de la lista
+    if (top - bot <= 0 || bot < 0 || top > lista.getTamanio()) return -1;
+
+    Nodo<producto_cantidad>* nodo = obtenerNodoPC(lista, bot);
+    if (!nodo) return -1;
+
+    float suma = 0;
+    for (int i = bot; i <= top; i++) {
+        if (!nodo) return -1;
+        suma += nodo->getDato().cantidad;
+        nodo = nodo->getSiguiente();
+    }
+    float promedio = suma/(top - bot);
+
+    nodo = obtenerNodoPC(lista,bot);
+    int pos = bot;
+    float dif_min = abs(nodo->getDato().cantidad - promedio), dif_actual;
+    for (int i = bot; i <= top && nodo; ++i) {
+        float dif = fabs(nodo->getDato().cantidad - promedio);
+        if (dif < dif_min) {
+            dif_min = dif;
+            pos = i;
+        }
+        nodo = nodo->getSiguiente();
+    }
+    return pos;
+}
+
+// funcion de particion para simplificar el quicksort, divide en mayores y menores que el pivote 
+int partitionPC(Lista<producto_cantidad>& lista, int bot, int top) { //
+    if (bot > top) return bot;
+
+    int pivotIndex = posListAvgPC(lista, bot, top);
+    if (pivotIndex == -1) return bot;
+
+    Nodo<producto_cantidad>* pivotNodo = obtenerNodoPC(lista, pivotIndex); // el pivot es el promedio de la seccion
+    Nodo<producto_cantidad>* pivotMedio = obtenerNodoPC(lista, (bot + top)/2); //Obtengo el nodo del medio
+    if (!pivotNodo || !pivotMedio) return bot;
     
-    for (int i = 0; i < size_c; i++) {
-        string clave = claves.getDato(i);
-        estadisticas_pais estadisticas = mapa.get(clave);
-        Nodo<medioenvio_cantidad>* inicio_m = estadisticas.mediosDeEnvio.getInicio();
-        Nodo<estadoenvio_cantidad>* inicio_e = estadisticas.estadosDeEnvio.getInicio();
+    int pivot = pivotNodo->getDato().cantidad; //obtengo la cantidad del pivot
+    
+    //Intercambio la posicion de esos dos pivotes
+    producto_cantidad temp = pivotNodo->getDato();
+    pivotNodo->setDato(pivotMedio->getDato());
+    pivotMedio->setDato(temp);
+    
+    int i = bot, j = top;
 
-        if (inicio_m != nullptr) {
-            bool swapped;
-            do {
-                swapped = false;
-                Nodo<medioenvio_cantidad>* actual = inicio_m;
-                Nodo<medioenvio_cantidad>* siguiente = inicio_m->getSiguiente();
-
-                while (siguiente != nullptr) {
-                    if (actual->getDato().ventas < siguiente->getDato().ventas) {
-                        // Intercambiamos los datos
-                        medioenvio_cantidad temp = actual->getDato();
-                        actual->setDato(siguiente->getDato());
-                        siguiente->setDato(temp);
-                        swapped = true;
-                    }
-                    actual = siguiente;
-                    siguiente = siguiente->getSiguiente();
-                }
-            } while (swapped);
+    while (i <= j) {
+        Nodo<producto_cantidad>* nodoI = obtenerNodoPC(lista, i);
+        while (nodoI && nodoI->getDato().cantidad < pivot) {
+            i++;
+            nodoI = obtenerNodoPC(lista, i);
         }
 
-        if (inicio_e != nullptr) {
-            bool swapped;
-            do {
-                swapped = false;
-                Nodo<estadoenvio_cantidad>* actual = inicio_e;
-                Nodo<estadoenvio_cantidad>* siguiente = inicio_e->getSiguiente();
-
-                while (siguiente != nullptr) {
-                    if (actual->getDato().ventas < siguiente->getDato().ventas) {
-                        // Intercambiamos los datos
-                        estadoenvio_cantidad temp = actual->getDato();
-                        actual->setDato(siguiente->getDato());
-                        siguiente->setDato(temp);
-                        swapped = true;
-                    }
-                    actual = siguiente;
-                    siguiente = siguiente->getSiguiente();
-                }
-            } while (swapped);
+        Nodo<producto_cantidad>* nodoJ = obtenerNodoPC(lista, j);
+        while (nodoJ && nodoJ->getDato().cantidad > pivot) {
+            j--;
+            nodoJ = obtenerNodoPC(lista, j);
         }
-        mapa.put(clave, estadisticas);
+
+        if (i <= j && nodoI && nodoJ) {
+            producto_cantidad temp = nodoI->getDato();
+            nodoI->setDato(nodoJ->getDato());
+            nodoJ->setDato(temp);
+            i++;
+            j--;
+        }
+    }
+    return j;
+}
+
+void quicksortListaPC(Lista<producto_cantidad>& lista, int bot, int top) {
+    if (bot < top) {
+        int pi = partitionPC(lista, bot, top);
+        quicksortListaPC(lista, bot, pi);
+        quicksortListaPC(lista, pi + 1, top);
+    }
+}
+
+void bubbleSortMediosDeEnvio (Lista<medioenvio_cantidad>& lista) {
+    Nodo<medioenvio_cantidad>* inicio_m = lista.getInicio();
+
+    if (inicio_m != nullptr) {
+        bool swapped;
+        do {
+            swapped = false;
+            Nodo<medioenvio_cantidad>* actual = inicio_m;
+            Nodo<medioenvio_cantidad>* siguiente = inicio_m->getSiguiente();
+
+            while (siguiente != nullptr) {
+                if (actual->getDato().ventas < siguiente->getDato().ventas) {
+                    // Intercambiamos los datos
+                    medioenvio_cantidad temp = actual->getDato();
+                    actual->setDato(siguiente->getDato());
+                    siguiente->setDato(temp);
+                    swapped = true;
+                }
+                actual = siguiente;
+                siguiente = siguiente->getSiguiente();
+            }
+        } while (swapped);
+    }
+}
+
+void bubbleSortEstadosDeEnvio (Lista<estadoenvio_cantidad>& lista) {
+    Nodo<estadoenvio_cantidad>* inicio_e = lista.getInicio();
+
+    if (inicio_e != nullptr) {
+        bool swapped;
+        do {
+            swapped = false;
+            Nodo<estadoenvio_cantidad>* actual = inicio_e;
+            Nodo<estadoenvio_cantidad>* siguiente = inicio_e->getSiguiente();
+
+            while (siguiente != nullptr) {
+                if (actual->getDato().ventas < siguiente->getDato().ventas) {
+                    // Intercambiamos los datos
+                    estadoenvio_cantidad temp = actual->getDato();
+                    actual->setDato(siguiente->getDato());
+                    siguiente->setDato(temp);
+                    swapped = true;
+                }
+                actual = siguiente;
+                siguiente = siguiente->getSiguiente();
+            }
+        } while (swapped);
     }
 }
 
@@ -431,8 +545,52 @@ void printEstadoDeEnvioMasFrencuentePorPais(HashMap<string, estadisticas_pais> &
         }
 
         cout << "El estado de envío más frecuente en " << clave << " es " << mapaPaises.get(clave).estadosDeEnvio.getDato(0).nombre << endl;
-        cout << "Cantidad: " << mapaPaises.get(clave).estadosDeEnvio.getDato(0).ventas << endl;
     }
+}
+
+void printMedioEnvioMasUtilizadoPorCategoria(HashMap<string, Lista<medioenvio_cantidad>>& mapaCategoria, Lista<string>& claves) {
+    std::cout << endl << "------------------------" << endl;
+    std::cout << "Medio de Envio Mas Utilizado Por Categoria: " << endl;
+
+    for (int i = 0; i < claves.getTamanio(); i++) { //Print cada categoria
+        
+        string clave = claves.getDato(i);
+        
+        std::cout << "--------------------" << endl;
+        std::cout << "Categoría: " << clave << endl;
+        
+        
+        if (!mapaCategoria.contieneClave(clave)) {
+            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            continue;
+        }
+
+        cout << "El medio de envío más utilizado en " << clave << " es " << mapaCategoria.get(clave).getDato(0).nombre << endl;
+        cout << "Cantidad: " << mapaCategoria.get(clave).getDato(0).ventas << endl;
+    }
+}
+
+void printProductoMasVendido(Lista<producto_cantidad>& lista) {
+    cout << "El producto más vendido es " << lista.getDato(lista.getTamanio() - 1).producto << endl;
+}
+
+void printProductoMenosVendido(Lista<producto_cantidad>& lista) {
+    cout << "El producto menos vendido es " << lista.getDato(0).producto << endl;
+}
+
+void printDiaMayorCantidadVentas(dia_montos& date) {
+    cout << "El día con mayor cantidad de ventas (en monto de dinero) es " << date.fecha.tm_mday << "/" << date.fecha.tm_mon + 1 << "/" << date.fecha.tm_year + 1900 << endl;
+}
+
+dia_montos buscarMaxListaDiaMonto(Lista<dia_montos>& lista) {
+    dia_montos monto_mayor = lista.getDato(0);
+    for (int i = 0; i < lista.getTamanio(); i++) {
+        dia_montos actual = lista.getDato(i);
+        if (actual.total > monto_mayor.total) {
+            monto_mayor = actual;
+        }
+    }
+    return monto_mayor;
 }
 
 HashMap<string, estadisticas_pais> getListasPorPais(HashMap<unsigned int, Venta>& mapa, Lista<string>& claves, int size) {
@@ -466,7 +624,6 @@ HashMap<string, estadisticas_pais> getListasPorPais(HashMap<unsigned int, Venta>
             estadisticas.categoriasPromedio = Lcategorias;
             estadisticas.mediosDeEnvio = Lmedioenvio;
             estadisticas.estadosDeEnvio = Lestadoenvio;
-            mapaPaises.put(v.pais, estadisticas); //inserto la lista la hashmap
             claves.insertarUltimo(v.pais); //inserto la clave a la lista de claves
         } else { // Si el pais existe
             Lista<ciudad_monto> Lciudades = mapaPaises.get(v.pais).ciudadesOrdenadasMonto;
@@ -537,13 +694,110 @@ HashMap<string, estadisticas_pais> getListasPorPais(HashMap<unsigned int, Venta>
             estadisticas.categoriasPromedio = Lcategorias; // Al finalizar esto, los promedios serán 0, pero los totales serán correctos
             estadisticas.mediosDeEnvio = Lmedioenvio;
             estadisticas.estadosDeEnvio = Lestadoenvio;
-            mapaPaises.put(v.pais, estadisticas); // Realizo la modificacion en el hashMap
         }
+        mapaPaises.put(v.pais, estadisticas); // Realizo la modificacion en el hashMap
     }
     ordenarTop5CiudadesPorMontoSegunPais(mapaPaises, claves); // Ordeno de menor a mayor las ciudades por montos
     calcularPromedioVentasPorCategoriaSegunPais(mapaPaises, claves); // Arreglo los promedios
-    bubbleSortMediosyEstadosDeEnvio(mapaPaises, claves);
+    for (int i = 0; i < claves.getTamanio(); i++) {
+        string pais = claves.getDato(i);
+        estadisticas_pais estadisticas = mapaPaises.get(pais);
+        bubbleSortEstadosDeEnvio(estadisticas.estadosDeEnvio);
+        bubbleSortMediosDeEnvio(estadisticas.mediosDeEnvio);
+        mapaPaises.put(pais, estadisticas);
+    }
     return mapaPaises;
+}
+
+HashMap<string, Lista<medioenvio_cantidad>> getListasPorCategoria(HashMap<unsigned int, Venta>& mapa, Lista<string>& claves, int size) {
+   
+    HashMap<string, Lista<medioenvio_cantidad>> mapaCategorias(11, hashString); // 4 categorias * 2, numero primo mas cercano
+    
+    for (int i = 1; i <= size; i++) {
+        Venta v = mapa.get(i);
+        medioenvio_cantidad medio = {v.medio_envio, 1};
+        Lista<medioenvio_cantidad> Lmedios;
+
+        if (!mapaCategorias.contieneClave(v.categoria)) { //No existe la categoria
+            Lmedios.insertarUltimo(medio);
+            claves.insertarUltimo(v.categoria);
+        } else {
+            Lmedios = mapaCategorias.get(v.categoria);
+            bool foundMed = false;
+            for (int j = 0; j < Lmedios.getTamanio() && !foundMed; j++) {
+                if (Lmedios.getDato(j).nombre == v.medio_envio) {
+                    medio.ventas = Lmedios.getDato(j).ventas + 1;
+                    Lmedios.reemplazar(j, medio);
+                    foundMed = true;
+                }
+            }
+            if (!foundMed) {
+                Lmedios.insertarUltimo(medio);
+            }
+        }
+        mapaCategorias.put(v.categoria, Lmedios);
+    }
+    for (int i = 0; i < claves.getTamanio(); i++) {
+        string clave = claves.getDato(i);
+        Lista<medioenvio_cantidad> lista_medios = mapaCategorias.get(clave);
+        bubbleSortMediosDeEnvio(lista_medios);
+        mapaCategorias.put(clave, lista_medios);
+    }
+    return mapaCategorias;
+}
+
+Lista<producto_cantidad> getListaOrdenadaProductos(HashMap<unsigned int, Venta>& mapa, int size) {
+    
+    Lista<producto_cantidad> productos;
+
+    for (int i = 1; i <= size; i++) {
+        Venta v = mapa.get(i);
+        producto_cantidad pc = {v.producto, v.cantidad};
+
+        bool found = false;
+        for (int j = 0; j < productos.getTamanio() && !found; j++) {
+            if (productos.getDato(j).producto == v.producto) {
+                pc.cantidad = productos.getDato(j).cantidad + v.cantidad;
+                productos.reemplazar(j, pc);
+                found = true;
+            }
+        }
+        if (!found) {
+            productos.insertarUltimo(pc);
+        }
+    }
+
+    quicksortListaPC(productos, 0, productos.getTamanio() - 1);
+
+    return productos;
+}
+
+dia_montos getDiaConMayorCantidadVentas(HashMap<unsigned int, Venta>& mapa, int size) {
+    
+    Lista<dia_montos> fechas;
+
+    for (int i = 1; i <= size; i++) {
+        Venta v = mapa.get(i);
+        dia_montos dia = {v.fecha, v.monto_total};
+
+        bool found = false;
+        for (int j = 0; j < fechas.getTamanio() && !found; j++) {
+            if (fechas.getDato(j).fecha.tm_mday == v.fecha.tm_mday && 
+                fechas.getDato(j).fecha.tm_mon == v.fecha.tm_mon && 
+                fechas.getDato(j).fecha.tm_year == v.fecha.tm_year) {
+                dia.total = fechas.getDato(j).total + v.monto_total;
+                fechas.reemplazar(j, dia);
+                found = true;
+            }
+        }
+        if (!found) {
+            fechas.insertarUltimo(dia);
+        }
+    }
+    
+    dia_montos max = buscarMaxListaDiaMonto(fechas);
+
+    return max;
 }
 
 #endif
