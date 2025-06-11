@@ -557,10 +557,7 @@ void printTop5CiudadesPorMontoSegunPais(HashMap<string, estadisticas_pais> &mapa
         cout << "País: " << clave << endl;
         
         cout << "1" << endl;
-        if (!mapaPaises.contieneClave(clave)) {
-            cout << "Error: el mapa no contiene la clave: " << clave << endl;
-            continue;
-        }
+
         cout << "2" << endl;
 
         Lista<ciudad_monto> paisactual = mapaPaises.get(clave).ciudadesOrdenadasMonto;
@@ -745,7 +742,7 @@ dia_montos buscarMaxListaDiaMonto(Lista<dia_montos>& lista) {
     return monto_mayor;
 }
 
-HashMap<string, estadisticas_pais> getListasPorPais(HashMap<unsigned int, Venta>& mapa, Lista<string>& claves, int size) {
+HashMap<string, estadisticas_pais> getListasPorPais(HashMap<unsigned int, Venta>& mapa, Lista<string>& claves, int& size) {
     
     HashMap<string, estadisticas_pais> mapaPaises(31, hashString); //12 paises en sudamerica, ocupan el 40% --> bajas colisiones
 
@@ -866,7 +863,7 @@ HashMap<string, estadisticas_pais> getListasPorPais(HashMap<unsigned int, Venta>
     return mapaPaises;
 }
 
-HashMap<string, Lista<medioenvio_cantidad>> getListasPorCategoria(HashMap<unsigned int, Venta>& mapa, Lista<string>& claves, int size) {
+HashMap<string, Lista<medioenvio_cantidad>> getListasPorCategoria(HashMap<unsigned int, Venta>& mapa, Lista<string>& claves, int& size) {
    
     HashMap<string, Lista<medioenvio_cantidad>> mapaCategorias(11, hashString); // 4 categorias * 2, numero primo mas cercano
     
@@ -908,7 +905,7 @@ HashMap<string, Lista<medioenvio_cantidad>> getListasPorCategoria(HashMap<unsign
     return mapaCategorias;
 }
 
-Lista<producto_cantidad> getListaOrdenadaProductos(HashMap<unsigned int, Venta>& mapa, int size) {
+Lista<producto_cantidad> getListaOrdenadaProductos(HashMap<unsigned int, Venta>& mapa, int& size) {
     // PODRIA INCORPORARSE CON COMPARACION ENTRE DOS PAISES - PRODUCTOS MAS VENDIDOS
     Lista<producto_cantidad> productos;
 
@@ -939,7 +936,7 @@ Lista<producto_cantidad> getListaOrdenadaProductos(HashMap<unsigned int, Venta>&
     return productos;
 }
 
-dia_montos getDiaConMayorCantidadVentas(HashMap<unsigned int, Venta>& mapa, int size) {
+dia_montos getDiaConMayorCantidadVentas(HashMap<unsigned int, Venta>& mapa, int& size) {
     
     Lista<dia_montos> fechas;
 
@@ -972,7 +969,7 @@ dia_montos getDiaConMayorCantidadVentas(HashMap<unsigned int, Venta>& mapa, int 
     return max;
 }
 
-int agregarVenta(HashMap<unsigned int, Venta>& mapa, int& size, Pila<int>& id_disponibles) {
+int agregarVenta(HashMap<unsigned int, Venta>& mapa, int& size, Pila<int>& id_disponibles, Lista<string>& claves) {
     int id;
     if (!id_disponibles.esVacia()) {
         id = id_disponibles.pop();
@@ -1025,6 +1022,15 @@ int agregarVenta(HashMap<unsigned int, Venta>& mapa, int& size, Pila<int>& id_di
 
     cout << "Nombre del país: ";
     getline(cin, v.pais);
+    bool found = false;
+    for (int i = 0; i < claves.getTamanio() && !found; i++) {
+        if (claves.getDato(i) == v.pais) {
+            found = true;
+        }
+    }
+    if (!found) {
+        claves.insertarUltimo(v.pais);
+    }
 
     cout << "Medio de envío: ";
     getline(cin, v.medio_envio);
@@ -1052,7 +1058,7 @@ int eliminarVenta(HashMap<unsigned int, Venta>& mapa, int &size, Pila<int>& id_d
     }
 }
 
-int modificarVenta(HashMap<unsigned int, Venta>& mapa, int &size) {
+int modificarVenta(HashMap<unsigned int, Venta>& mapa, int &size, Lista<string>& claves) {
     int id;
     cout << "Ingrese el ID de la venta que desee modificar." << endl;
     cin >> id;
@@ -1072,6 +1078,7 @@ int modificarVenta(HashMap<unsigned int, Venta>& mapa, int &size) {
             cout << "09) Estado del envío" << endl;
             cout << "00) EXIT" << endl << endl;
             cin >> option;
+            bool found = false;
             switch (option)
             {
             case 1:
@@ -1109,6 +1116,14 @@ int modificarVenta(HashMap<unsigned int, Venta>& mapa, int &size) {
                 cout << "Pais: " << endl;
                 cin.ignore();
                 getline(cin, v.pais);
+                for (int i = 0; i < claves.getTamanio() && !found; i++) {
+                    if (claves.getDato(i) == v.pais) {
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    claves.insertarUltimo(v.pais);
+                }
                 break;
             case 8:
                 cout << "Medio de envío: " << endl;
@@ -1156,7 +1171,7 @@ void printVentasCiudad(string ciudad, HashMap<unsigned int, Venta>& mapa, int &s
     VentasCiudad.print();
 }
 
-void printVentasRangoFechas(tm start, tm end, HashMap<unsigned int, Venta>& mapa, int& size, Lista<string> paises) {
+void printVentasRangoFechas(tm start, tm end, HashMap<unsigned int, Venta>& mapa, int& size, Lista<string>& paises) {
     HashMap<string, Lista<int>> mapaPaisesVentas(31, hashString);
     Lista<int> VentasFecha;
     time_t start_t = mktime(&start);
@@ -1316,7 +1331,7 @@ void compararMedioDeEnvio(string pais1, string pais2, HashMap<string, estadistic
     }
 }
 
-void compararCantidadProductos(string producto1, string producto2, HashMap<unsigned int, Venta>& mapa, int size, Lista<string>& paises) {
+void compararCantidadProductos(string producto1, string producto2, HashMap<unsigned int, Venta>& mapa, int& size, Lista<string>& paises) {
     HashMap<string, int> totalProducto1(31, hashString);
     HashMap<string, int> totalProducto2(31, hashString);
 
@@ -1355,7 +1370,7 @@ void compararCantidadProductos(string producto1, string producto2, HashMap<unsig
     
 }
 
-void compararMontosProductos(string producto1, string producto2, HashMap<string, estadisticas_pais>& mapaPaises, Lista<string> claves) {
+void compararMontosProductos(string producto1, string producto2, HashMap<string, estadisticas_pais>& mapaPaises, Lista<string>& claves) {
     cout << endl << "------------------------" << endl;
     cout << "Monto total por producto por país: " << endl;
 
@@ -1439,8 +1454,26 @@ void buscarProductosPromedio(float monto, bool superior, string pais, HashMap<un
     }
 }
 
-void actualizarTodo(HashMap<unsigned int, Venta>& mapaVenta, int& sizeofmap, Lista<string>& claves_mapaPaises, HashMap<string, estadisticas_pais>& mapaPaises, Lista<string>& claves_mapaCategorias, HashMap<string, Lista<medioenvio_cantidad>>& mapaCategorias, Lista<producto_cantidad>& listaOrdenadaProductosPorCantidad, dia_montos& fechaConMasVentas) {
-    // Extract data from map --> returns struct
+void actualizarTodo(
+    HashMap<unsigned int, Venta>& mapaVenta,
+    int& sizeofmap,
+    Lista<string>& claves_mapaPaises,
+    HashMap<string, estadisticas_pais>& mapaPaises,
+    Lista<string>& claves_mapaCategorias,
+    HashMap<string, Lista<medioenvio_cantidad>>& mapaCategorias,
+    Lista<producto_cantidad>& listaOrdenadaProductosPorCantidad,
+    dia_montos& fechaConMasVentas)
+{
+    // Vaciamos estructuras anteriores
+    claves_mapaPaises = Lista<string>(); // limpia lista de claves de países
+    mapaPaises = HashMap<string, estadisticas_pais>(31, hashString); // reinicializa con mismo tamaño
+
+    claves_mapaCategorias = Lista<string>(); // limpia lista de claves de categorías
+    mapaCategorias = HashMap<string, Lista<medioenvio_cantidad>>(11, hashString);
+
+    listaOrdenadaProductosPorCantidad = Lista<producto_cantidad>(); // limpia lista de productos
+
+    // Volvemos a generar cada estructura usando las funciones existentes:
     mapaPaises = getListasPorPais(mapaVenta, claves_mapaPaises, sizeofmap);
     mapaCategorias = getListasPorCategoria(mapaVenta, claves_mapaCategorias, sizeofmap);
     listaOrdenadaProductosPorCantidad = getListaOrdenadaProductos(mapaVenta, sizeofmap);

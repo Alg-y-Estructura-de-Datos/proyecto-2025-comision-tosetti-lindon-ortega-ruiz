@@ -7,7 +7,6 @@
 #include "HashMap\HashMap.h" // CAMBIAR POR HASHMAP LIST PARA USAR MEJOR MANEJO DE COLISIONES
 #include "Lista\Lista.h"
 #include "Pila\Pila.h"
-#include "Cola\Cola.h"
 #define NOMBRE_ARCHIVO ("C:/Users/mairi/source/proyecto-2025-comision-tosetti-lindon-ortega-ruiz/ventas_sudamerica.csv")
 using namespace std;
 
@@ -95,7 +94,7 @@ int main(void) {
             int id_modificado;
             switch (process) {
                 case 1:
-                    id_modificado = agregarVenta(mapaVenta, sizeofmap, ID_eliminados);
+                    id_modificado = agregarVenta(mapaVenta, sizeofmap, ID_eliminados, claves_mapaPaises);
                     if (id_modificado != -1) {
                         actualizarTodo(mapaVenta, sizeofmap, claves_mapaPaises, mapaPaises, claves_mapaCategorias, mapaCategorias, listaOrdenadaProductosPorCantidad, fechaConMasVentas);
                     } 
@@ -107,7 +106,7 @@ int main(void) {
                     }
                     break;
                 case 3:
-                    id_modificado = modificarVenta(mapaVenta, sizeofmap);
+                    id_modificado = modificarVenta(mapaVenta, sizeofmap, claves_mapaPaises);
                     if (id_modificado != -1) {
                         actualizarTodo(mapaVenta, sizeofmap, claves_mapaPaises, mapaPaises, claves_mapaCategorias, mapaCategorias, listaOrdenadaProductosPorCantidad, fechaConMasVentas);
                     }

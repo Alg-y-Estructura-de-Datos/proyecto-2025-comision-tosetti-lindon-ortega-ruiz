@@ -20,7 +20,7 @@ public:
         clave = c;
     }
 
-    T getValor(){
+    T& getValor(){
         return valor;
     }
     void setValor(T v){
