@@ -24,6 +24,8 @@ int main(void) {
     loadFile (mapaVenta, sizeofmap); // Mapa de ventas por ID
     cout << sizeofmap << " lineas cargadas." << endl;
     
+    //START PROCESAMIENTO
+
     Lista<string> claves_mapaPaises; // Almaceno las claves de mapaPaises (usadas en las siguientes funciones)
 
     // Extract data from map --> returns struct
@@ -36,6 +38,8 @@ int main(void) {
     Lista<producto_cantidad> listaOrdenadaProductosPorCantidad = getListaOrdenadaProductos(mapaVenta, sizeofmap);
 
     dia_montos fechaConMasVentas = getDiaConMayorCantidadVentas(mapaVenta, sizeofmap);
+
+    //END PROCESAMIENTO
 
     // Creo una pila que almacena IDs eliminados
     Pila<int> ID_eliminados;
@@ -88,15 +92,25 @@ int main(void) {
             int process;
             printMenu(2);
             cin >> process;
+            int id_modificado;
             switch (process) {
                 case 1:
-                    agregarVenta(mapaVenta, sizeofmap, ID_eliminados);
+                    id_modificado = agregarVenta(mapaVenta, sizeofmap, ID_eliminados);
+                    if (id_modificado != -1) {
+                        actualizarTodo(mapaVenta, sizeofmap, claves_mapaPaises, mapaPaises, claves_mapaCategorias, mapaCategorias, listaOrdenadaProductosPorCantidad, fechaConMasVentas);
+                    } 
                     break;
                 case 2:
-                    eliminarVenta(mapaVenta, sizeofmap, ID_eliminados);
+                    id_modificado = eliminarVenta(mapaVenta, sizeofmap, ID_eliminados);
+                    if (id_modificado != -1) {
+                        actualizarTodo(mapaVenta, sizeofmap, claves_mapaPaises, mapaPaises, claves_mapaCategorias, mapaCategorias, listaOrdenadaProductosPorCantidad, fechaConMasVentas);
+                    }
                     break;
                 case 3:
-                    modificarVenta(mapaVenta, sizeofmap);
+                    id_modificado = modificarVenta(mapaVenta, sizeofmap);
+                    if (id_modificado != -1) {
+                        actualizarTodo(mapaVenta, sizeofmap, claves_mapaPaises, mapaPaises, claves_mapaCategorias, mapaCategorias, listaOrdenadaProductosPorCantidad, fechaConMasVentas);
+                    }
                     break;
                 default:
                     cout << "Unvalid option. Leaving...";

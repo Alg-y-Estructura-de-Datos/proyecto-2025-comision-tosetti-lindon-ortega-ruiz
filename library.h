@@ -551,17 +551,21 @@ void printTop5CiudadesPorMontoSegunPais(HashMap<string, estadisticas_pais> &mapa
 
     for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
         
-        cout << "--------------------" << endl;
-        cout << "País: " << claves.getDato(i) << endl;
-        
         string clave = claves.getDato(i);
+
+        cout << "--------------------" << endl;
+        cout << "País: " << clave << endl;
         
+        cout << "1" << endl;
         if (!mapaPaises.contieneClave(clave)) {
             cout << "Error: el mapa no contiene la clave: " << clave << endl;
             continue;
         }
+        cout << "2" << endl;
 
         Lista<ciudad_monto> paisactual = mapaPaises.get(clave).ciudadesOrdenadasMonto;
+        
+        cout << "3" << endl;
 
         int j = min(4, (paisactual.getTamanio() - 1)); //posicion 4 o tamaño de la lista
 
@@ -968,7 +972,7 @@ dia_montos getDiaConMayorCantidadVentas(HashMap<unsigned int, Venta>& mapa, int 
     return max;
 }
 
-void agregarVenta(HashMap<unsigned int, Venta>& mapa, int &size, Pila<int>& id_disponibles) {
+int agregarVenta(HashMap<unsigned int, Venta>& mapa, int& size, Pila<int>& id_disponibles) {
     int id;
     if (!id_disponibles.esVacia()) {
         id = id_disponibles.pop();
@@ -1029,10 +1033,11 @@ void agregarVenta(HashMap<unsigned int, Venta>& mapa, int &size, Pila<int>& id_d
     getline(cin, v.estado_envio);
 
     mapa.put(id, v);
-    cout << "Carga exitosa!" << endl;    
+    cout << "Carga exitosa!" << endl;
+    return id;
 }
 
-void eliminarVenta(HashMap<unsigned int, Venta>& mapa, int &size, Pila<int>& id_disponibles) {
+int eliminarVenta(HashMap<unsigned int, Venta>& mapa, int &size, Pila<int>& id_disponibles) {
     int id;
     cout << "Ingrese el ID de la venta que desee eliminar." << endl;
     cin >> id;
@@ -1040,12 +1045,14 @@ void eliminarVenta(HashMap<unsigned int, Venta>& mapa, int &size, Pila<int>& id_
         id_disponibles.push(id);
         mapa.remove(id);
         cout << "Venta eliminada!" << endl;
+        return id;
     } else {
         cout << "No hay una venta con ese ID" << endl;
+        return -1;
     }
 }
 
-void modificarVenta(HashMap<unsigned int, Venta>& mapa, int &size) {
+int modificarVenta(HashMap<unsigned int, Venta>& mapa, int &size) {
     int id;
     cout << "Ingrese el ID de la venta que desee modificar." << endl;
     cin >> id;
@@ -1069,15 +1076,18 @@ void modificarVenta(HashMap<unsigned int, Venta>& mapa, int &size) {
             {
             case 1:
                 cout << "Categoría: " << endl;
+                cin.ignore();
                 getline(cin, v.categoria);
                 break;
             case 2:
                 cout << "Producto: " << endl;
+                cin.ignore();
                 getline(cin, v.producto);
                 break;
             case 3:
                 cout << "Cantidad: " << endl;
                 cin >> v.cantidad;
+                cin.ignore();
                 v.monto_total = v.cantidad * v.precio_unitario;
                 break;
             case 4:
@@ -1087,22 +1097,27 @@ void modificarVenta(HashMap<unsigned int, Venta>& mapa, int &size) {
                 break;
             case 5:
                 cout << "Cliente: " << endl;
+                cin.ignore();
                 getline(cin, v.cliente);
                 break;
             case 6:
                 cout << "Ciudad: " << endl;
+                cin.ignore();
                 getline(cin, v.ciudad);
                 break;
             case 7:
                 cout << "Pais: " << endl;
+                cin.ignore();
                 getline(cin, v.pais);
                 break;
             case 8:
                 cout << "Medio de envío: " << endl;
+                cin.ignore();
                 getline(cin, v.medio_envio);
                 break;
             case 9: 
                 cout << "Estado de envío: " << endl;
+                cin.ignore();
                 getline(cin, v.estado_envio);
                 break;
             case 0:
@@ -1115,8 +1130,10 @@ void modificarVenta(HashMap<unsigned int, Venta>& mapa, int &size) {
         } while (option != 0);
         mapa.put(id, v);
         cout << "Modificaciones exitosas" << endl;
+        return id;
     } else {
         cout << "No hay una venta con ese ID" << endl;
+        return -1;
     }
 }
 
@@ -1422,8 +1439,12 @@ void buscarProductosPromedio(float monto, bool superior, string pais, HashMap<un
     }
 }
 
-void actualizarProcesamiento(Lista<string>& claves_mapaPaises, HashMap<unsigned int, Venta>& mapaVenta, Lista<string>& claves_mapaCategorias, HashMap<string, Lista<medioenvio_cantidad>>& mapaCategorias, Lista<producto_cantidad>& listaOrdenadaProductosPorCantidad, dia_montos& fechaConMasVentas) {
-
+void actualizarTodo(HashMap<unsigned int, Venta>& mapaVenta, int& sizeofmap, Lista<string>& claves_mapaPaises, HashMap<string, estadisticas_pais>& mapaPaises, Lista<string>& claves_mapaCategorias, HashMap<string, Lista<medioenvio_cantidad>>& mapaCategorias, Lista<producto_cantidad>& listaOrdenadaProductosPorCantidad, dia_montos& fechaConMasVentas) {
+    // Extract data from map --> returns struct
+    mapaPaises = getListasPorPais(mapaVenta, claves_mapaPaises, sizeofmap);
+    mapaCategorias = getListasPorCategoria(mapaVenta, claves_mapaCategorias, sizeofmap);
+    listaOrdenadaProductosPorCantidad = getListaOrdenadaProductos(mapaVenta, sizeofmap);
+    fechaConMasVentas = getDiaConMayorCantidadVentas(mapaVenta, sizeofmap);
 }
 
 #endif
