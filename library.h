@@ -941,12 +941,8 @@ dia_montos getDiaConMayorCantidadVentas(HashMap<unsigned int, Venta>& mapa, int&
     Lista<dia_montos> fechas;
 
     for (int i = 1; i <= size; i++) {
-        Venta v;
-        try {
-            v = mapa.get(i);
-        } catch (...) {
-            continue;
-        }
+        if(!mapa.contieneClave(i)) continue;
+        Venta v = mapa.get(i);
         dia_montos dia = {v.fecha, v.monto_total};
 
         bool found = false;
@@ -970,16 +966,16 @@ dia_montos getDiaConMayorCantidadVentas(HashMap<unsigned int, Venta>& mapa, int&
 }
 
 int agregarVenta(HashMap<unsigned int, Venta>& mapa, int& size, Pila<int>& id_disponibles, Lista<string>& claves) {
-    int id;
-    if (!id_disponibles.esVacia()) {
-        id = id_disponibles.pop();
-    } else {
-        size++;
-        id = size;
-    }
-    cout << "Ingrese los datos de la venta con ID: " << id << endl;
     Venta v;
-
+    
+    size++;  
+    if (!id_disponibles.esVacia()) {
+        v.id = id_disponibles.pop();
+    } else {
+        v.id = size;
+    }
+    cout << "Ingrese los datos de la venta con ID: " << v.id << endl;
+    
     time_t tiempoActual = time(nullptr); // Obtiene el tiempo actual
     tm fecha = *localtime(&tiempoActual); // Convierte a estructura tm
 
@@ -1038,9 +1034,9 @@ int agregarVenta(HashMap<unsigned int, Venta>& mapa, int& size, Pila<int>& id_di
     cout << "Estado del envío: ";
     getline(cin, v.estado_envio);
 
-    mapa.put(id, v);
+    mapa.put(v.id, v);
     cout << "Carga exitosa!" << endl;
-    return id;
+    return v.id;
 }
 
 int eliminarVenta(HashMap<unsigned int, Venta>& mapa, int &size, Pila<int>& id_disponibles) {
@@ -1157,14 +1153,12 @@ void printVentasCiudad(string ciudad, HashMap<unsigned int, Venta>& mapa, int &s
     Lista<int> VentasCiudad;
 
     for (int i = 1; i <= size; i++) {
-        Venta v;
-        try {
-            v = mapa.get(i);
-        } catch (...) {
-            continue;
-        }
+        if(!mapa.contieneClave(i)) continue;
+        Venta v = mapa.get(i);
         if (v.ciudad == ciudad) {
-            VentasCiudad.insertarUltimo(v.id);
+            cout << i << " insertado" << endl;
+            cout << v.id << endl;
+            VentasCiudad.insertarUltimo(i);
         }
     }
 
