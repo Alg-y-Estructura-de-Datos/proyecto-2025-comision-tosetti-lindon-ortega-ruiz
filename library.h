@@ -747,12 +747,8 @@ HashMap<string, estadisticas_pais> getListasPorPais(HashMap<unsigned int, Venta>
     HashMap<string, estadisticas_pais> mapaPaises(31, hashString); //12 paises en sudamerica, ocupan el 40% --> bajas colisiones
 
     for (int i = 1; i <= size; i++) { //IF básico de conteo --> no cuenta
-        Venta v;
-        try {
-            v = mapa.get(i);
-        } catch (...) {
-            continue;
-        }
+        if (!mapa.contieneClave(i)) continue;
+        Venta v = mapa.get(i);
         estadisticas_pais estadisticas; // Estructura que contiene las listas de cada pais
         // creo el objeto ciudad monto (si no existe la ciudad, se insertará; si ya existe se usa para reemplazar el valor del monto)
         ciudad_monto cm = {v.ciudad, v.monto_total};
@@ -868,12 +864,8 @@ HashMap<string, Lista<medioenvio_cantidad>> getListasPorCategoria(HashMap<unsign
     HashMap<string, Lista<medioenvio_cantidad>> mapaCategorias(11, hashString); // 4 categorias * 2, numero primo mas cercano
     
     for (int i = 1; i <= size; i++) {
-        Venta v;
-        try {
-            v = mapa.get(i);
-        } catch (...) {
-            continue;
-        }
+        if (!mapa.contieneClave(i)) continue;
+        Venta v = mapa.get(i);
         medioenvio_cantidad medio = {v.medio_envio, 1};
         Lista<medioenvio_cantidad> Lmedios;
 
@@ -910,12 +902,8 @@ Lista<producto_cantidad> getListaOrdenadaProductos(HashMap<unsigned int, Venta>&
     Lista<producto_cantidad> productos;
 
     for (int i = 1; i <= size; i++) {
-        Venta v;
-        try {
-            v = mapa.get(i);
-        } catch (...) {
-            continue;
-        }
+        if (!mapa.contieneClave(i)) continue;
+        Venta v = mapa.get(i);
         producto_cantidad pc = {v.producto, v.cantidad};
 
         bool found = false;
@@ -1156,8 +1144,6 @@ void printVentasCiudad(string ciudad, HashMap<unsigned int, Venta>& mapa, int &s
         if(!mapa.contieneClave(i)) continue;
         Venta v = mapa.get(i);
         if (v.ciudad == ciudad) {
-            cout << i << " insertado" << endl;
-            cout << v.id << endl;
             VentasCiudad.insertarUltimo(i);
         }
     }
@@ -1177,14 +1163,9 @@ void printVentasRangoFechas(tm start, tm end, HashMap<unsigned int, Venta>& mapa
     }
 
     for (int i = 1; i <= size; i++) {
-        Venta v;
-        try {
-            v = mapa.get(i);
-        } catch (...) {
-            continue;
-        }
-        v = mapa.get(i);
-        tm date = mapa.get(i).fecha;
+        if (!mapa.contieneClave(i)) continue;
+        Venta v = mapa.get(i);
+        tm date = v.fecha;
         time_t date_t = mktime(&date);
         if (date_t >= start_t && date_t <= end_t) {
             cout << "enter" << endl;
@@ -1210,12 +1191,8 @@ Lista<int> getListaVentasPais(string pais, HashMap<unsigned int, Venta>& mapa, i
     Lista<int> VentasPais;
     // Se podría directamente utilizar en la primera funcion
     for (int i = 1; i <= size; i++) {
-        Venta v;
-        try {
-            v = mapa.get(i);
-        } catch (...) {
-            continue;
-        }
+        if (!mapa.contieneClave(i)) continue;
+        Venta v = mapa.get(i);
         if (v.pais == pais) {
             VentasPais.insertarUltimo(v.id);
         }
@@ -1330,12 +1307,8 @@ void compararCantidadProductos(string producto1, string producto2, HashMap<unsig
     HashMap<string, int> totalProducto2(31, hashString);
 
     for (int i = 1; i <= size; i++) {
-        Venta v;
-        try {
-            v = mapa.get(i);
-        } catch (...) {
-            continue;
-        }
+        if (!mapa.contieneClave(i)) continue;
+        Venta v = mapa.get(i);
 
         if (v.producto == producto1) {
             if (!totalProducto1.contieneClave(v.pais)) {
@@ -1398,12 +1371,8 @@ void buscarProductosPromedio(float monto, bool superior, string pais, HashMap<un
     Lista<producto_promedio> lista;
 
     for (int i = 1; i <= size; i++) {
-        Venta v;
-        try {
-            v = mapa.get(i);
-        } catch (...) {
-            continue;
-        }
+        if (!mapa.contieneClave(i)) continue;
+        Venta v = mapa.get(i);
         if (v.pais == pais) {
             bool found = false;
             for (int j = 0; j < lista.getTamanio() && !found; j++) {
