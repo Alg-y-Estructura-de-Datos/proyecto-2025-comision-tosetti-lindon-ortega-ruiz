@@ -1379,35 +1379,51 @@ void buscarProductosPromedio(float monto, bool superior, string pais, HashMap<un
             continue;
         }
         if (v.pais == pais) {
-            producto_promedio pp = {v.producto, v.monto_total, 1, 0};
             bool found = false;
             for (int j = 0; j < lista.getTamanio() && !found; j++) {
                 if (lista.getDato(j).producto == v.producto) {
+                    producto_promedio pp = lista.getDato(j);
                     pp.total += v.monto_total;
                     pp.ventas++;
+                    pp.promedio = pp.total / pp.ventas;
                     lista.reemplazar(j, pp);
                     found = true;
                 }
             }
             if (!found) {
+                producto_promedio pp = {v.producto, v.monto_total, 1, v.monto_total};
                 lista.insertarUltimo(pp);
             }
         }
     }
 
-    for (int k = 0; k < lista.getTamanio(); k++) {
-        producto_promedio aux = lista.getDato(k);
-        aux.promedio = aux.total / aux.ventas;
-        lista.reemplazar(k, aux);
-    }
-
     quicksortListaPP(lista, 0, lista.getTamanio() - 1);
 
-    busquedaBinaria(lista, monto);
+    int pos = busquedaBinaria(lista, monto);
 
     if (superior) {
-        
+        cout << "Productos con monto promedio mayor a $" << monto << " por unidad vendidos en " << pais << ": " << endl;
+        if (pos < lista.getTamanio() && lista.getDato(pos).promedio <= monto) {
+            pos++;
+        }
+        for (int l = pos; l < lista.getTamanio(); l++) {
+            cout << lista.getDato(l).producto << " -> ";
+        }
+        cout << "NULL" << endl;
+    } else {
+        cout << "Productos con monto promedio menor a $" << monto << " por unidad vendidos en " << pais << ": " << endl;
+        if (pos >= 0 && lista.getDato(pos).promedio >= monto) {
+            pos--;
+        }
+        for (int l = 0; l < pos + 1; l++) {
+            cout << lista.getDato(l).producto << " -> ";
+        }
+        cout << "NULL" << endl;
     }
+}
+
+void actualizarProcesamiento(Lista<string>& claves_mapaPaises, HashMap<unsigned int, Venta>& mapaVenta, Lista<string>& claves_mapaCategorias, HashMap<string, Lista<medioenvio_cantidad>>& mapaCategorias, Lista<producto_cantidad>& listaOrdenadaProductosPorCantidad, dia_montos& fechaConMasVentas) {
+
 }
 
 #endif

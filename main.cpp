@@ -15,6 +15,7 @@ void printMenu(int n);
 
 int main(void) {
     int sizeofmap = 0;
+    float monto;
     string aux_ciudad, start_date, end_date, pais1, pais2, producto1, producto2;
     // CARGAR LOS DATOS - A través de una funcion en un archivo cpp
     cout << "Cargando datos..." << endl;
@@ -39,67 +40,75 @@ int main(void) {
     // Creo una pila que almacena IDs eliminados
     Pila<int> ID_eliminados;
 
-    int option, process;
-    printMenu(0);
-    cin >> option;
-    printMenu(option);
-    cin >> process;
-
-    switch (option)
-    {
-        case 1:
-            switch (process)
-            {
-            case 1:
-                printTop5CiudadesPorMontoSegunPais(mapaPaises, claves_mapaPaises);
-                break;
-            case 2:
-                printMontoTotalPorProductoSegunPais(mapaPaises, claves_mapaPaises);
-                break;
-            case 3:
-                printPromedioVentasPorCategoriaSegunPais(mapaPaises, claves_mapaPaises);
-                break;
-            case 4:
-                printMedioEnvioMasUtilizadoPorPais(mapaPaises, claves_mapaPaises);
-                break;
-            case 5:
-                printMedioEnvioMasUtilizadoPorCategoria(mapaCategorias, claves_mapaCategorias);
-                break;
-            case 6:
-                printDiaMayorCantidadVentas(fechaConMasVentas);
-                break;
-            case 7:
-                printEstadoDeEnvioMasFrencuentePorPais(mapaPaises, claves_mapaPaises);
-                break;
-            case 8:
-                printProductoMasVendido(listaOrdenadaProductosPorCantidad);
-                break;
-            case 9:
-                printProductoMenosVendido(listaOrdenadaProductosPorCantidad);
-                break;
-            default:
-                cout << "Unvalid option. Leaving...";
-                break;
+    bool salir = false;
+    while (!salir) {
+        int option;
+        printMenu(0);
+        cin >> option;
+        switch (option) {
+            case 1: {
+                int process;
+                printMenu(1);
+                cin >> process;
+                switch (process) {
+                    case 1:
+                        printTop5CiudadesPorMontoSegunPais(mapaPaises, claves_mapaPaises);
+                        break;
+                    case 2:
+                        printMontoTotalPorProductoSegunPais(mapaPaises, claves_mapaPaises);
+                        break;
+                    case 3:
+                        printPromedioVentasPorCategoriaSegunPais(mapaPaises, claves_mapaPaises);
+                        break;
+                    case 4:
+                        printMedioEnvioMasUtilizadoPorPais(mapaPaises, claves_mapaPaises);
+                        break;
+                    case 5:
+                        printMedioEnvioMasUtilizadoPorCategoria(mapaCategorias, claves_mapaCategorias);
+                        break;
+                    case 6:
+                        printDiaMayorCantidadVentas(fechaConMasVentas);
+                        break;
+                    case 7:
+                        printEstadoDeEnvioMasFrencuentePorPais(mapaPaises, claves_mapaPaises);
+                        break;
+                    case 8:
+                        printProductoMasVendido(listaOrdenadaProductosPorCantidad);
+                        break;
+                    case 9:
+                        printProductoMenosVendido(listaOrdenadaProductosPorCantidad);
+                        break;
+                    default:
+                        cout << "Volviendo al menú principal...";
+                        break;
+                    }
+            break;
+        }
+        case 2: {
+            int process;
+            printMenu(2);
+            cin >> process;
+            switch (process) {
+                case 1:
+                    agregarVenta(mapaVenta, sizeofmap, ID_eliminados);
+                    break;
+                case 2:
+                    eliminarVenta(mapaVenta, sizeofmap, ID_eliminados);
+                    break;
+                case 3:
+                    modificarVenta(mapaVenta, sizeofmap);
+                    break;
+                default:
+                    cout << "Unvalid option. Leaving...";
+                    break;
             }
             break;
-        case 2:
-            switch (process)
-            {
-            case 1:
-                agregarVenta(mapaVenta, sizeofmap, ID_eliminados);
-                break;
-            case 2:
-                eliminarVenta(mapaVenta, sizeofmap, ID_eliminados);
-            case 3:
-                modificarVenta(mapaVenta, sizeofmap);
-            default:
-                cout << "Unvalid option. Leaving...";
-                break;
-            }
-            break;
-        case 3:
-            switch (process)
-            {
+        }
+        case 3: {
+            int process;
+            printMenu(3);
+            cin >> process;
+            switch (process) {
                 case 1:
                     cout << "Ingrese la ciudad: ";
                     cin >> aux_ciudad;
@@ -151,14 +160,40 @@ int main(void) {
                     cin >> producto2;
                     compararMontosProductos(producto1, producto2, mapaPaises, claves_mapaPaises);
                     break;
+                case 8:
+                    cout << "Umbral: " << endl;
+                    cin >> monto;
+                    cout << "País: " << endl;
+                    cin >> pais1;
+                    buscarProductosPromedio(monto, false, pais1, mapaVenta, sizeofmap);
+                    break;
+                case 9:
+                    cout << "Umbral: " << endl;
+                    cin >> monto;
+                    cout << "País: " << endl;
+                    cin >> pais1;
+                    buscarProductosPromedio(monto, true, pais1, mapaVenta, sizeofmap);
+                    break;
                 default:
                     cout << "Unvalid option. Leaving...";
                     break;
             }
             break;
+        }
         default:
-            break;
+             cout << "¿Desea salir del programa? (s/n): ";
+                char confirm;
+                cin >> confirm;
+                if (confirm == 's' || confirm == 'S') {
+                    salir = true;
+                    cout << "Saliendo del programa..." << endl;
+                } else {
+                    cout << "Volviendo al menú principal..." << endl;
+                }
+                break;
+        }
     }
+    
     return 0;
 }
 
