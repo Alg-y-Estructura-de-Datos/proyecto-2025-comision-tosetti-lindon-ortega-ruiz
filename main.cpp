@@ -6,6 +6,7 @@
 #include <ctime>
 #include "HashMap\HashMap.h" // CAMBIAR POR HASHMAP LIST PARA USAR MEJOR MANEJO DE COLISIONES
 #include "Lista\Lista.h"
+#include "Pila\Pila.h"
 #include "Cola\Cola.h"
 #define NOMBRE_ARCHIVO ("C:/Users/mairi/source/proyecto-2025-comision-tosetti-lindon-ortega-ruiz/ventas_sudamerica.csv")
 using namespace std;
@@ -14,6 +15,7 @@ void printMenu(int n);
 
 int main(void) {
     int sizeofmap = 0;
+    string aux_ciudad, start_date, end_date, pais1, pais2, producto1, producto2;
     // CARGAR LOS DATOS - A través de una funcion en un archivo cpp
     cout << "Cargando datos..." << endl;
     HashMap<unsigned int, Venta> mapaVenta(5999, hashFunc);
@@ -33,10 +35,10 @@ int main(void) {
     Lista<producto_cantidad> listaOrdenadaProductosPorCantidad = getListaOrdenadaProductos(mapaVenta, sizeofmap);
 
     dia_montos fechaConMasVentas = getDiaConMayorCantidadVentas(mapaVenta, sizeofmap);
-    // MENU --> ~ 9 opciones
-        // Modificaciones
-            // Realizar y corremos el procesamiento
-        // Consultas dinámicas
+
+    // Creo una pila que almacena IDs eliminados
+    Pila<int> ID_eliminados;
+
     int option, process;
     printMenu(0);
     cin >> option;
@@ -79,9 +81,80 @@ int main(void) {
                 cout << "Unvalid option. Leaving...";
                 break;
             }
+            break;
         case 2:
+            switch (process)
+            {
+            case 1:
+                agregarVenta(mapaVenta, sizeofmap, ID_eliminados);
+                break;
+            case 2:
+                eliminarVenta(mapaVenta, sizeofmap, ID_eliminados);
+            case 3:
+                modificarVenta(mapaVenta, sizeofmap);
+            default:
+                cout << "Unvalid option. Leaving...";
+                break;
+            }
             break;
         case 3:
+            switch (process)
+            {
+                case 1:
+                    cout << "Ingrese la ciudad: ";
+                    cin >> aux_ciudad;
+                    printVentasCiudad(aux_ciudad, mapaVenta, sizeofmap);
+                    break;
+                case 2:
+                    do {
+                        cout << "USAR FORMATO DD/MM/YYYY HH:MM" << endl;
+                        cout << "Ingrese fecha de inicio: ";
+                        cin.ignore();
+                        getline(cin, start_date);
+                        cout << "Ingrese fecha de fin: ";
+                        getline(cin, end_date);
+                    } while (!validarFecha(start_date) && !validarFecha(end_date));
+                    printVentasRangoFechas(stringToDateTime(start_date), stringToDateTime(end_date), mapaVenta, sizeofmap, claves_mapaPaises);
+                    break;
+                case 3:
+                    cout << "País 1: " << endl;
+                    cin >> pais1;
+                    cout << "País 2: " << endl;
+                    cin >> pais2;
+                    compararMontosPais(pais1, pais2, mapaVenta, sizeofmap);
+                    break;
+                case 4:
+                    cout << "País 1: " << endl;
+                    cin >> pais1;
+                    cout << "País 2: " << endl;
+                    cin >> pais2;
+                    compararProductosMasVendidos(pais1, pais2, mapaVenta, sizeofmap);
+                    break;
+                case 5:
+                    cout << "País 1: " << endl;
+                    cin >> pais1;
+                    cout << "País 2: " << endl;
+                    cin >> pais2;
+                    compararMedioDeEnvio(pais1, pais2, mapaPaises);
+                    break;
+                case 6:
+                    cout << "Producto 1: " << endl;
+                    cin >> producto1;
+                    cout << "Producto 2: " << endl;
+                    cin >> producto2;
+                    compararCantidadProductos(producto1, producto2, mapaVenta, sizeofmap, claves_mapaPaises);
+                    break;
+                case 7:
+                    cout << "Producto 1: " << endl;
+                    cin >> producto1;
+                    cout << "Producto 2: " << endl;
+                    cin >> producto2;
+                    compararMontosProductos(producto1, producto2, mapaPaises, claves_mapaPaises);
+                    break;
+                default:
+                    cout << "Unvalid option. Leaving...";
+                    break;
+            }
             break;
         default:
             break;
@@ -134,6 +207,7 @@ void printMenu(int n) {
         cout << "08) Buscar productos vendidos en promedio por debajo de un monto" << endl;
         cout << "09) Buscar productos vendidos en promedio por encima de un monto" << endl;
         cout << endl;
+        break;
     default:
         cout << "Saliendo...";
         break;

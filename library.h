@@ -8,6 +8,7 @@
 #include <math.h>
 #include <ctime>
 #include "Lista\Lista.h"
+#include "Pila\Pila.h"
 #include "HashMap\HashMap.h" // CAMBIAR POR HASHMAP LIST PARA USAR MEJOR MANEJO DE COLISIONES
 #define NOMBRE_ARCHIVO ("C:/Users/mairi/source/proyecto-2025-comision-tosetti-lindon-ortega-ruiz/ventas_sudamerica.csv")
 using namespace std;
@@ -52,7 +53,15 @@ struct producto_cantidad {
     int cantidad;
 };
 
+struct producto_promedio {
+    string producto;
+    float total;
+    int ventas;
+    float promedio;
+};
+
 struct estadisticas_pais {
+    // Lista<int> Ventas; --> Podría haber desarrollado las siguientes estructuras en base a esto
     Lista<ciudad_monto> ciudadesOrdenadasMonto;
     Lista<producto_monto> productosMontoTotal;
     Lista<categoria> categoriasPromedio;
@@ -84,9 +93,9 @@ auto trim = [](string s) { //FUNCION BUSCADA EN INTERNET PARA ASEGURAR QUE LOS D
     return s;
 };
 
-tm stringToDateTime(const string& fechaStr) { //CONVIERTO A FECHA
+tm stringToDateTime(const string& fechaString) { //CONVIERTO A FECHA
     tm fecha = {};
-    istringstream ss(fechaStr);
+    istringstream ss(fechaString);
     
     ss >> get_time(&fecha, "%d/%m/%Y %H:%M"); // Formato: DD/MM/YYYY HH:MM
 
@@ -97,6 +106,16 @@ tm stringToDateTime(const string& fechaStr) { //CONVIERTO A FECHA
     return fecha;
 }
 
+bool validarFecha(const string& date) {
+    tm fecha = {};
+    istringstream ss(date);
+    ss >> get_time(&fecha, "%d/%m/%Y %H:%M");
+    if (ss.fail()) {
+        return false;
+    } else {
+        return true;
+    }
+}
 
 //Función carga de archivo csv
 void loadFile (HashMap<unsigned int, Venta> &mapa, int &size) {
@@ -141,6 +160,98 @@ void loadFile (HashMap<unsigned int, Venta> &mapa, int &size) {
     }
 
     archivo.close();
+}
+
+Nodo<producto_promedio>* obtenerNodoPP(Lista<producto_promedio>& lista, int pos) { // Para trabajar con punteros, obtenemos el nodo
+    if (pos < 0 || pos >= lista.getTamanio()) return nullptr;
+    Nodo<producto_promedio>* aux = lista.getInicio(); // el auxiliar es el primer nodo de la lista
+    int i = 0;
+    while (aux != nullptr && i < pos) { // busco la posicion
+        aux = aux->getSiguiente();
+        i++;
+    }
+    return aux; // devuelve el nodo correspondiente a la posicion
+}
+
+int posListAvgPP(Lista<producto_promedio>& lista, int bot, int top) { //Obtengo la posición del promedio de la lista
+    if (top - bot <= 0 || bot < 0 || top > lista.getTamanio()) return -1;
+
+    Nodo<producto_promedio>* nodo = obtenerNodoPP(lista, bot);
+    if (!nodo) return -1;
+
+    float suma = 0;
+    for (int i = bot; i <= top; i++) {
+        if (!nodo) return -1;
+        suma += nodo->getDato().promedio;
+        nodo = nodo->getSiguiente();
+    }
+    float promedio_lista = suma/(top - bot);
+
+    nodo = obtenerNodoPP(lista,bot);
+    int pos = bot;
+    float dif_min = abs(nodo->getDato().promedio - promedio_lista), dif_actual;
+    for (int i = bot; i <= top && nodo; ++i) {
+        float dif = fabs(nodo->getDato().promedio - promedio_lista);
+        if (dif < dif_min) {
+            dif_min = dif;
+            pos = i;
+        }
+        nodo = nodo->getSiguiente();
+    }
+    return pos;
+}
+
+// funcion de particion para simplificar el quicksort, divide en mayores y menores que el pivote 
+int partitionPP(Lista<producto_promedio>& lista, int bot, int top) { //
+    if (bot > top) return bot;
+
+    int pivotIndex = posListAvgPP(lista, bot, top);
+    if (pivotIndex == -1) return bot;
+
+    Nodo<producto_promedio>* pivotNodo = obtenerNodoPP(lista, pivotIndex); // el pivot es el promedio de la seccion
+    Nodo<producto_promedio>* pivotMedio = obtenerNodoPP(lista, (bot + top)/2); //Obtengo el nodo del medio
+    if (!pivotNodo || !pivotMedio) return bot;
+    
+    float pivot = pivotNodo->getDato().promedio; //obtengo el promedio del pivot
+    
+    //Intercambio la posicion de esos dos pivotes
+    producto_promedio temp = pivotNodo->getDato();
+    pivotNodo->setDato(pivotMedio->getDato());
+    pivotMedio->setDato(temp);
+    
+    int i = bot, j = top;
+
+    while (i <= j) {
+        Nodo<producto_promedio>* nodoI = obtenerNodoPP(lista, i);
+        while (nodoI && nodoI->getDato().promedio < pivot) {
+            i++;
+            nodoI = obtenerNodoPP(lista, i);
+        }
+
+        Nodo<producto_promedio>* nodoJ = obtenerNodoPP(lista, j);
+        while (nodoJ && nodoJ->getDato().promedio > pivot) {
+            j--;
+            nodoJ = obtenerNodoPP(lista, j);
+        }
+
+        if (i <= j && nodoI && nodoJ) {
+            producto_promedio temp = nodoI->getDato();
+            nodoI->setDato(nodoJ->getDato());
+            nodoJ->setDato(temp);
+            i++;
+            j--;
+        }
+    }
+    return j;
+}
+
+// Implementación de Quicksort para Lista Enlazada
+void quicksortListaPP(Lista<producto_promedio>& lista, int bot, int top) {
+    if (bot < top) {
+        int pi = partitionPP(lista, bot, top);
+        quicksortListaPP(lista, bot, pi);
+        quicksortListaPP(lista, pi + 1, top);
+    }
 }
 
 Nodo<ciudad_monto>* obtenerNodoCM(Lista<ciudad_monto>& lista, int pos) { // Para trabajar con punteros, obtenemos el nodo
@@ -383,7 +494,7 @@ void ordenarTop5CiudadesPorMontoSegunPais(HashMap<string, estadisticas_pais>& ma
         string clave = claves_mapaPaises.getDato(i);
 
         if (!mapa.contieneClave(clave)) {
-            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            cout << "Error: el mapa no contiene la clave: " << clave << endl;
             continue;
         }
 
@@ -397,20 +508,56 @@ void ordenarTop5CiudadesPorMontoSegunPais(HashMap<string, estadisticas_pais>& ma
     }
 }
 
+int busquedaBinaria(Lista<producto_promedio>& lista, float monto) {
+    int pos_izq = 0, pos_der = lista.getTamanio() - 1;
+    int pos_mas_cercano = pos_izq + (pos_der - pos_izq) / 2;
+    float menor_diferencia = fabs(lista.getDato(pos_mas_cercano).promedio - monto);
+
+    while (pos_izq <= pos_der) {
+        int pos_medio = pos_izq + (pos_der - pos_izq) / 2;
+        Nodo<producto_promedio>* medio = obtenerNodoPP(lista, pos_medio);
+
+        if (!medio) {
+            return pos_mas_cercano;
+        }
+
+        float promedio_medio = medio->getDato().promedio;
+        float diferencia_actual = fabs(promedio_medio - monto);
+
+        // Verificar si este es el promedio más cercano hasta ahora
+        if (diferencia_actual < menor_diferencia) {
+            menor_diferencia = diferencia_actual;
+            pos_mas_cercano = pos_medio;
+        }
+
+        // Si encontramos el promedio exacto, devolvemos la posición
+        if (promedio_medio == monto) {
+            return pos_medio;
+        } else if (promedio_medio < monto) {
+            pos_izq = pos_medio + 1;
+        } else {
+            pos_der = pos_medio - 1;
+        }
+    }
+
+    // Retorna la posición más cercana si no se encuentra el valor exacto
+    return pos_mas_cercano;
+}
+
 void printTop5CiudadesPorMontoSegunPais(HashMap<string, estadisticas_pais> &mapaPaises, Lista<string> &claves) {
     
-    std::cout << endl << "------------------------" << endl;
-    std::cout << "Top 5 ciudades por país según monto: " << endl;
+    cout << endl << "------------------------" << endl;
+    cout << "Top 5 ciudades por país según monto: " << endl;
 
     for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
         
-        std::cout << "--------------------" << endl;
-        std::cout << "País: " << claves.getDato(i) << endl;
+        cout << "--------------------" << endl;
+        cout << "País: " << claves.getDato(i) << endl;
         
         string clave = claves.getDato(i);
         
         if (!mapaPaises.contieneClave(clave)) {
-            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            cout << "Error: el mapa no contiene la clave: " << clave << endl;
             continue;
         }
 
@@ -419,40 +566,41 @@ void printTop5CiudadesPorMontoSegunPais(HashMap<string, estadisticas_pais> &mapa
         int j = min(4, (paisactual.getTamanio() - 1)); //posicion 4 o tamaño de la lista
 
         while (j >= 0) { // Imprime en orden descendente
-            std::cout << fixed << setprecision(2);
-            std::cout << endl;
-            std::cout << "Ciudad: " << paisactual.getDato(j).ciudad << endl;
-            std::cout << "Monto: " << paisactual.getDato(j).total << endl; 
-            std::cout << endl;
+            cout << fixed << setprecision(2);
+            cout << endl;
+            cout << "Ciudad: " << paisactual.getDato(j).ciudad << endl;
+            cout << "Monto: " << paisactual.getDato(j).total << endl; 
+            cout << endl;
             j--;
         }
     }
 }
 
 void printMontoTotalPorProductoSegunPais(HashMap<string, estadisticas_pais> &mapaPaises, Lista<string> &claves) {
-    std::cout << endl << "------------------------" << endl;
-    std::cout << "Monto total por producto por país: " << endl;
+    cout << endl << "------------------------" << endl;
+    cout << "Monto total por producto por país: " << endl;
 
     for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
         
         string clave = claves.getDato(i);
 
-        std::cout << "--------------------" << endl;
-        std::cout << "País: " << clave << endl;
+        cout << "--------------------" << endl;
+        cout << "País: " << clave << endl;
         
         if (!mapaPaises.contieneClave(clave)) {
-            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            cout << "Error: el mapa no contiene la clave: " << clave << endl;
             continue;
         }
 
         Lista<producto_monto> paisactual = mapaPaises.get(clave).productosMontoTotal;
 
         for (int j = 0; j < paisactual.getTamanio(); j++) { // Imprime todos los productos
-            std::cout << fixed << setprecision(2);
-            std::cout << endl;
-            std::cout << "Producto: " << paisactual.getDato(j).nombre << endl;
-            std::cout << "Monto Total: " << paisactual.getDato(j).total << endl; 
-            std::cout << endl;
+            producto_monto producto = paisactual.getDato(j);
+            cout << fixed << setprecision(2);
+            cout << endl;
+            cout << "Producto: " << producto.nombre << endl;
+            cout << "Monto Total: " << producto.total << endl; 
+            cout << endl;
         }
     }
 }
@@ -463,7 +611,7 @@ void calcularPromedioVentasPorCategoriaSegunPais(HashMap<string, estadisticas_pa
         string clave = clavesPaises.getDato(i);
 
         if (!mapa.contieneClave(clave)) {
-            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            cout << "Error: el mapa no contiene la clave: " << clave << endl;
             continue;
         }
 
@@ -480,46 +628,46 @@ void calcularPromedioVentasPorCategoriaSegunPais(HashMap<string, estadisticas_pa
 }
 
 void printPromedioVentasPorCategoriaSegunPais(HashMap<string, estadisticas_pais> &mapaPaises, Lista<string> &claves) {
-    std::cout << endl << "------------------------" << endl;
-    std::cout << "Promedio ventas por categorias: " << endl;
+    cout << endl << "------------------------" << endl;
+    cout << "Promedio ventas por categorias: " << endl;
 
     for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
         
         string clave = claves.getDato(i);
 
-        std::cout << "--------------------" << endl;
-        std::cout << "País: " << clave << endl;
+        cout << "--------------------" << endl;
+        cout << "País: " << clave << endl;
         
         
         if (!mapaPaises.contieneClave(clave)) {
-            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            cout << "Error: el mapa no contiene la clave: " << clave << endl;
             continue;
         }
 
         Lista<categoria> paisactual = mapaPaises.get(clave).categoriasPromedio;
 
         for (int j = 0; j < paisactual.getTamanio(); j++) { // Imprime todos los productos
-            std::cout << fixed << setprecision(2);
-            std::cout << endl;
-            std::cout << "Categoria: " << paisactual.getDato(j).nombre << endl;
-            std::cout << "Promedio: " << paisactual.getDato(j).promedio << endl; 
-            std::cout << endl;
+            cout << fixed << setprecision(2);
+            cout << endl;
+            cout << "Categoria: " << paisactual.getDato(j).nombre << endl;
+            cout << "Promedio: " << paisactual.getDato(j).promedio << endl; 
+            cout << endl;
         }
     }
 }
 
 void printMedioEnvioMasUtilizadoPorPais(HashMap<string, estadisticas_pais> &mapaPaises, Lista<string> &claves) {
-    std::cout << endl << "------------------------" << endl;
-    std::cout << "Medio de envío más utilizado por país: " << endl;
+    cout << endl << "------------------------" << endl;
+    cout << "Medio de envío más utilizado por país: " << endl;
 
     for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
         string clave = claves.getDato(i);
         
-        std::cout << "--------------------" << endl;
-        std::cout << "País: " << clave << endl;
+        cout << "--------------------" << endl;
+        cout << "País: " << clave << endl;
         
         if (!mapaPaises.contieneClave(clave)) {
-            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            cout << "Error: el mapa no contiene la clave: " << clave << endl;
             continue;
         }
 
@@ -528,19 +676,19 @@ void printMedioEnvioMasUtilizadoPorPais(HashMap<string, estadisticas_pais> &mapa
 }
 
 void printEstadoDeEnvioMasFrencuentePorPais(HashMap<string, estadisticas_pais> &mapaPaises, Lista<string> &claves) {
-    std::cout << endl << "------------------------" << endl;
-    std::cout << "Estado de Envio Mas Frecuente Por Pais: " << endl;
+    cout << endl << "------------------------" << endl;
+    cout << "Estado de Envio Mas Frecuente Por Pais: " << endl;
 
     for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
         
         string clave = claves.getDato(i);
         
-        std::cout << "--------------------" << endl;
-        std::cout << "País: " << clave << endl;
+        cout << "--------------------" << endl;
+        cout << "País: " << clave << endl;
         
         
         if (!mapaPaises.contieneClave(clave)) {
-            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            cout << "Error: el mapa no contiene la clave: " << clave << endl;
             continue;
         }
 
@@ -549,19 +697,19 @@ void printEstadoDeEnvioMasFrencuentePorPais(HashMap<string, estadisticas_pais> &
 }
 
 void printMedioEnvioMasUtilizadoPorCategoria(HashMap<string, Lista<medioenvio_cantidad>>& mapaCategoria, Lista<string>& claves) {
-    std::cout << endl << "------------------------" << endl;
-    std::cout << "Medio de Envio Mas Utilizado Por Categoria: " << endl;
+    cout << endl << "------------------------" << endl;
+    cout << "Medio de Envio Mas Utilizado Por Categoria: " << endl;
 
     for (int i = 0; i < claves.getTamanio(); i++) { //Print cada categoria
         
         string clave = claves.getDato(i);
         
-        std::cout << "--------------------" << endl;
-        std::cout << "Categoría: " << clave << endl;
+        cout << "--------------------" << endl;
+        cout << "Categoría: " << clave << endl;
         
         
         if (!mapaCategoria.contieneClave(clave)) {
-            std::cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            cout << "Error: el mapa no contiene la clave: " << clave << endl;
             continue;
         }
 
@@ -598,7 +746,12 @@ HashMap<string, estadisticas_pais> getListasPorPais(HashMap<unsigned int, Venta>
     HashMap<string, estadisticas_pais> mapaPaises(31, hashString); //12 paises en sudamerica, ocupan el 40% --> bajas colisiones
 
     for (int i = 1; i <= size; i++) { //IF básico de conteo --> no cuenta
-        Venta v = mapa.get(i);
+        Venta v;
+        try {
+            v = mapa.get(i);
+        } catch (...) {
+            continue;
+        }
         estadisticas_pais estadisticas; // Estructura que contiene las listas de cada pais
         // creo el objeto ciudad monto (si no existe la ciudad, se insertará; si ya existe se usa para reemplazar el valor del monto)
         ciudad_monto cm = {v.ciudad, v.monto_total};
@@ -714,7 +867,12 @@ HashMap<string, Lista<medioenvio_cantidad>> getListasPorCategoria(HashMap<unsign
     HashMap<string, Lista<medioenvio_cantidad>> mapaCategorias(11, hashString); // 4 categorias * 2, numero primo mas cercano
     
     for (int i = 1; i <= size; i++) {
-        Venta v = mapa.get(i);
+        Venta v;
+        try {
+            v = mapa.get(i);
+        } catch (...) {
+            continue;
+        }
         medioenvio_cantidad medio = {v.medio_envio, 1};
         Lista<medioenvio_cantidad> Lmedios;
 
@@ -747,11 +905,16 @@ HashMap<string, Lista<medioenvio_cantidad>> getListasPorCategoria(HashMap<unsign
 }
 
 Lista<producto_cantidad> getListaOrdenadaProductos(HashMap<unsigned int, Venta>& mapa, int size) {
-    
+    // PODRIA INCORPORARSE CON COMPARACION ENTRE DOS PAISES - PRODUCTOS MAS VENDIDOS
     Lista<producto_cantidad> productos;
 
     for (int i = 1; i <= size; i++) {
-        Venta v = mapa.get(i);
+        Venta v;
+        try {
+            v = mapa.get(i);
+        } catch (...) {
+            continue;
+        }
         producto_cantidad pc = {v.producto, v.cantidad};
 
         bool found = false;
@@ -777,7 +940,12 @@ dia_montos getDiaConMayorCantidadVentas(HashMap<unsigned int, Venta>& mapa, int 
     Lista<dia_montos> fechas;
 
     for (int i = 1; i <= size; i++) {
-        Venta v = mapa.get(i);
+        Venta v;
+        try {
+            v = mapa.get(i);
+        } catch (...) {
+            continue;
+        }
         dia_montos dia = {v.fecha, v.monto_total};
 
         bool found = false;
@@ -798,6 +966,448 @@ dia_montos getDiaConMayorCantidadVentas(HashMap<unsigned int, Venta>& mapa, int 
     dia_montos max = buscarMaxListaDiaMonto(fechas);
 
     return max;
+}
+
+void agregarVenta(HashMap<unsigned int, Venta>& mapa, int &size, Pila<int>& id_disponibles) {
+    int id;
+    if (!id_disponibles.esVacia()) {
+        id = id_disponibles.pop();
+    } else {
+        size++;
+        id = size;
+    }
+    cout << "Ingrese los datos de la venta con ID: " << id << endl;
+    Venta v;
+
+    time_t tiempoActual = time(nullptr); // Obtiene el tiempo actual
+    tm fecha = *localtime(&tiempoActual); // Convierte a estructura tm
+
+    // Fijar la hora a 00:00:00
+    fecha.tm_hour = 0;
+    fecha.tm_min = 0;
+    fecha.tm_sec = 0;
+
+    // Convertir de nuevo a time_t para reflejar el cambio
+    time_t tiempoFijo = mktime(&fecha);
+
+    // Mostrar la fecha con la hora fija
+    cout << "Fecha de la venta: " << asctime(&fecha) << endl;
+
+    v.fecha = fecha;
+
+    cout << "Categoría del producto: ";
+    cin.ignore();
+    getline(cin, v.categoria);
+
+    cout << "Nombre del producto: ";
+    getline(cin, v.producto);
+
+    cout << "Cantidad del producto: ";
+    cin >> v.cantidad;
+
+    cout << "Precio unitario: ";
+    cin >> v.precio_unitario;
+    
+    v.monto_total = v.precio_unitario * v.cantidad;
+
+    cout << "Monto total de " << v.monto_total << endl;
+
+    cout << "Nombre del cliente: ";
+    cin.ignore();
+    getline(cin, v.cliente);
+
+    cout << "Nombre de la ciudad: ";
+    getline(cin, v.ciudad);
+
+    cout << "Nombre del país: ";
+    getline(cin, v.pais);
+
+    cout << "Medio de envío: ";
+    getline(cin, v.medio_envio);
+
+    cout << "Estado del envío: ";
+    getline(cin, v.estado_envio);
+
+    mapa.put(id, v);
+    cout << "Carga exitosa!" << endl;    
+}
+
+void eliminarVenta(HashMap<unsigned int, Venta>& mapa, int &size, Pila<int>& id_disponibles) {
+    int id;
+    cout << "Ingrese el ID de la venta que desee eliminar." << endl;
+    cin >> id;
+    if(mapa.contieneClave(id)) {
+        id_disponibles.push(id);
+        mapa.remove(id);
+        cout << "Venta eliminada!" << endl;
+    } else {
+        cout << "No hay una venta con ese ID" << endl;
+    }
+}
+
+void modificarVenta(HashMap<unsigned int, Venta>& mapa, int &size) {
+    int id;
+    cout << "Ingrese el ID de la venta que desee modificar." << endl;
+    cin >> id;
+    if(mapa.contieneClave(id)) {
+        Venta v = mapa.get(id);
+        int option;
+        do {  
+            cout << "----- ¿Qué desea modificar? -----" << endl;
+            cout << "01) Categoria" << endl;
+            cout << "02) Producto" << endl;
+            cout << "03) Cantidad" << endl;
+            cout << "04) Precio Unitario" << endl;
+            cout << "05) Cliente" << endl;
+            cout << "06) Ciudad" << endl;
+            cout << "07) Pais" << endl;
+            cout << "08) Medio de envío" << endl;
+            cout << "09) Estado del envío" << endl;
+            cout << "00) EXIT" << endl << endl;
+            cin >> option;
+            switch (option)
+            {
+            case 1:
+                cout << "Categoría: " << endl;
+                getline(cin, v.categoria);
+                break;
+            case 2:
+                cout << "Producto: " << endl;
+                getline(cin, v.producto);
+                break;
+            case 3:
+                cout << "Cantidad: " << endl;
+                cin >> v.cantidad;
+                v.monto_total = v.cantidad * v.precio_unitario;
+                break;
+            case 4:
+                cout << "Precio Unitario: " << endl;
+                cin >> v.precio_unitario;
+                v.monto_total = v.cantidad * v.precio_unitario;
+                break;
+            case 5:
+                cout << "Cliente: " << endl;
+                getline(cin, v.cliente);
+                break;
+            case 6:
+                cout << "Ciudad: " << endl;
+                getline(cin, v.ciudad);
+                break;
+            case 7:
+                cout << "Pais: " << endl;
+                getline(cin, v.pais);
+                break;
+            case 8:
+                cout << "Medio de envío: " << endl;
+                getline(cin, v.medio_envio);
+                break;
+            case 9: 
+                cout << "Estado de envío: " << endl;
+                getline(cin, v.estado_envio);
+                break;
+            case 0:
+                cout << "Saliendo..." << endl;
+                break;
+            default:
+                cout << "Opcion invalida." << endl;
+                break;
+            }
+        } while (option != 0);
+        mapa.put(id, v);
+        cout << "Modificaciones exitosas" << endl;
+    } else {
+        cout << "No hay una venta con ese ID" << endl;
+    }
+}
+
+void printVentasCiudad(string ciudad, HashMap<unsigned int, Venta>& mapa, int &size) {
+    
+    Lista<int> VentasCiudad;
+
+    for (int i = 1; i <= size; i++) {
+        Venta v;
+        try {
+            v = mapa.get(i);
+        } catch (...) {
+            continue;
+        }
+        if (v.ciudad == ciudad) {
+            VentasCiudad.insertarUltimo(v.id);
+        }
+    }
+
+    VentasCiudad.print();
+}
+
+void printVentasRangoFechas(tm start, tm end, HashMap<unsigned int, Venta>& mapa, int& size, Lista<string> paises) {
+    HashMap<string, Lista<int>> mapaPaisesVentas(31, hashString);
+    Lista<int> VentasFecha;
+    time_t start_t = mktime(&start);
+    time_t end_t = mktime(&end);
+
+    if (start_t > end_t) {
+        cout << "La fecha de inicio es mayor a la fecha de fin, vuelva a intentar." << endl;
+        return;
+    }
+
+    for (int i = 1; i <= size; i++) {
+        Venta v;
+        try {
+            v = mapa.get(i);
+        } catch (...) {
+            continue;
+        }
+        v = mapa.get(i);
+        tm date = mapa.get(i).fecha;
+        time_t date_t = mktime(&date);
+        if (date_t >= start_t && date_t <= end_t) {
+            cout << "enter" << endl;
+            if (mapaPaisesVentas.contieneClave(v.pais)) {
+                VentasFecha = mapaPaisesVentas.get(v.pais);
+            }
+            VentasFecha.insertarUltimo(v.id);
+            mapaPaisesVentas.put(v.pais, VentasFecha);
+        }
+    }
+
+    for (int j = 0; j < paises.getTamanio(); j++) {
+        string clave = paises.getDato(j);
+        if (mapaPaisesVentas.contieneClave(clave)) {
+            cout << "Ids de las ventas en " << clave << endl;
+            mapaPaisesVentas.get(clave).print(); 
+            cout << "------------" << endl;
+        }
+    }
+}
+
+Lista<int> getListaVentasPais(string pais, HashMap<unsigned int, Venta>& mapa, int& size) {
+    Lista<int> VentasPais;
+    // Se podría directamente utilizar en la primera funcion
+    for (int i = 1; i <= size; i++) {
+        Venta v;
+        try {
+            v = mapa.get(i);
+        } catch (...) {
+            continue;
+        }
+        if (v.pais == pais) {
+            VentasPais.insertarUltimo(v.id);
+        }
+    }
+
+    return VentasPais;
+}
+
+void compararMontosPais(string pais1, string pais2, HashMap<unsigned int, Venta>& mapa, int& size) {
+    Lista<int> listaPais1 = getListaVentasPais(pais1, mapa, size);
+    Lista<int> listaPais2 = getListaVentasPais(pais2, mapa, size);
+    
+    float monto_pais1 = 0, monto_pais2 = 0;
+    for (int i = 0; i < listaPais1.getTamanio(); i++) {
+        monto_pais1 += mapa.get(listaPais1.getDato(i)).monto_total;
+    }
+    for (int j = 0; j < listaPais2.getTamanio(); j++) {
+        monto_pais2 += mapa.get(listaPais2.getDato(j)).monto_total;
+    }
+
+    cout << fixed << setprecision(2);
+    cout << "El monto total de " << pais1 << " es " << monto_pais1 << endl;
+    cout << "El monto total de " << pais2 << " es " << monto_pais2 << endl;
+    if (monto_pais1 > monto_pais2) {
+        cout << "El monto total de ventas de " << pais1 << " es mayor al de " << pais2 << endl;
+    } else if (monto_pais2 > monto_pais1) {
+        cout << "El monto total de ventas de " << pais2 << " es mayor al de " << pais1 << endl;
+    } else {
+        cout << "Los montos totales son iguales" << endl;
+    }
+}
+
+void compararProductosMasVendidos(string pais1, string pais2, HashMap<unsigned int, Venta>& mapa, int& size) {
+    Lista<int> listaPais1 = getListaVentasPais(pais1, mapa, size);
+    Lista<int> listaPais2 = getListaVentasPais(pais2, mapa, size);
+    
+    Lista<producto_cantidad> productos_pais1;
+    Lista<producto_cantidad> productos_pais2;
+    for (int i = 0; i < listaPais1.getTamanio(); i++) {
+        Venta v = mapa.get(listaPais1.getDato(i));
+        producto_cantidad pc = {v.producto, v.cantidad};
+
+        bool found = false;
+        for (int j = 0; j < productos_pais1.getTamanio() && !found; j++) {
+            if (productos_pais1.getDato(j).producto == v.producto) {
+                pc.cantidad = productos_pais1.getDato(j).cantidad + v.cantidad;
+                productos_pais1.reemplazar(j, pc);
+                found = true;
+            }
+        }
+        if (!found) {
+            productos_pais1.insertarUltimo(pc);
+        }
+    }
+    for (int j = 0; j < listaPais2.getTamanio(); j++) {
+        Venta v = mapa.get(listaPais2.getDato(j));
+        producto_cantidad pc = {v.producto, v.cantidad};
+
+        bool found = false;
+        for (int j = 0; j < productos_pais2.getTamanio() && !found; j++) {
+            if (productos_pais2.getDato(j).producto == v.producto) {
+                pc.cantidad = productos_pais2.getDato(j).cantidad + v.cantidad;
+                productos_pais2.reemplazar(j, pc);
+                found = true;
+            }
+        }
+        if (!found) {
+            productos_pais2.insertarUltimo(pc);
+        }
+    }
+
+    quicksortListaPC(productos_pais1, 0, productos_pais1.getTamanio() - 1);
+    quicksortListaPC(productos_pais2, 0, productos_pais2.getTamanio() - 1);
+
+    producto_cantidad mas_vendido_1 = productos_pais1.getDato(productos_pais1.getTamanio() - 1);
+    producto_cantidad mas_vendido_2 = productos_pais2.getDato(productos_pais2.getTamanio() - 1);
+
+    cout << "El producto más vendido de " << pais1 << " es " << mas_vendido_1.producto << endl;
+    cout << "El producto más vendido de " << pais2 << " es " << mas_vendido_2.producto << endl;
+
+    if (mas_vendido_1.cantidad > mas_vendido_2.cantidad) {
+        cout << "El producto " << mas_vendido_1.producto << " fue el más vendido de los dos." << endl;
+    } else if (mas_vendido_1.cantidad < mas_vendido_2.cantidad) {
+        cout << "El producto " << mas_vendido_2.producto << " fue el más vendido de los dos." << endl;
+    } else {
+        cout << "Ambos productos fueron vendidos por igual." << endl;
+    }
+}
+
+void compararMedioDeEnvio(string pais1, string pais2, HashMap<string, estadisticas_pais>& mapa) {
+    Lista<medioenvio_cantidad> lista_pais1 = mapa.get(pais1).mediosDeEnvio;
+    Lista<medioenvio_cantidad> lista_pais2 = mapa.get(pais2).mediosDeEnvio;
+    bubbleSortMediosDeEnvio(lista_pais1);
+    bubbleSortMediosDeEnvio(lista_pais2);
+    medioenvio_cantidad may_medio_pais1 = lista_pais1.getDato(0);
+    medioenvio_cantidad may_medio_pais2 = lista_pais2.getDato(0);
+
+    cout << "El medio de envío más utilizado de " << pais1 << " es " << may_medio_pais1.nombre << endl;
+    cout << "El medio de envío más utilizado de " << pais2 << " es " << may_medio_pais2.nombre << endl;
+
+    if (may_medio_pais1.ventas > may_medio_pais2.ventas) {
+        cout << "El medio de envío " << may_medio_pais1.nombre << " fue el más utilizado de los dos." << endl;
+    } else if (may_medio_pais1.ventas < may_medio_pais2.ventas) {
+        cout << "El medio de envio " << may_medio_pais2.nombre << " fue el más utilizado de los dos." << endl;
+    } else {
+        cout << "Ambos medios de envio fueron utilizados por igual." << endl;
+    }
+}
+
+void compararCantidadProductos(string producto1, string producto2, HashMap<unsigned int, Venta>& mapa, int size, Lista<string>& paises) {
+    HashMap<string, int> totalProducto1(31, hashString);
+    HashMap<string, int> totalProducto2(31, hashString);
+
+    for (int i = 1; i <= size; i++) {
+        Venta v;
+        try {
+            v = mapa.get(i);
+        } catch (...) {
+            continue;
+        }
+
+        if (v.producto == producto1) {
+            if (!totalProducto1.contieneClave(v.pais)) {
+                totalProducto1.put(v.pais, v.cantidad);
+            } else {
+                totalProducto1.put(v.pais, totalProducto1.get(v.pais) + v.cantidad);
+            }
+        } else if (v.producto == producto2) {
+            if (!totalProducto2.contieneClave(v.pais)) {
+                totalProducto2.put(v.pais, v.cantidad);
+            } else {
+                totalProducto2.put(v.pais, totalProducto2.get(v.pais) + v.cantidad);
+            }
+        }
+    }
+
+    cout << "Cantidad de productos vendidos por país: " << endl;
+    cout << "----------------------------------" << endl;
+    for (int j = 0; j < paises.getTamanio(); j++) {
+        string pais = paises.getDato(j);
+        cout << pais << endl;
+        cout << producto1 << ": " << totalProducto1.get(pais) << endl;
+        cout << producto2 << ": " << totalProducto2.get(pais) << endl;
+        cout << endl;
+    }
+    
+}
+
+void compararMontosProductos(string producto1, string producto2, HashMap<string, estadisticas_pais>& mapaPaises, Lista<string> claves) {
+    cout << endl << "------------------------" << endl;
+    cout << "Monto total por producto por país: " << endl;
+
+    for (int i = 0; i < claves.getTamanio(); i++) { //Print cada pais
+        
+        string clave = claves.getDato(i);
+
+        cout << "--------------------" << endl;
+        cout << "País: " << clave << endl << endl;
+        
+        if (!mapaPaises.contieneClave(clave)) {
+            cout << "Error: el mapa no contiene la clave: " << clave << endl;
+            continue;
+        }
+
+        Lista<producto_monto> paisactual = mapaPaises.get(clave).productosMontoTotal;
+
+        for (int j = 0; j < paisactual.getTamanio(); j++) { // Imprime todos los productos
+            producto_monto producto = paisactual.getDato(j);
+            if (producto.nombre == producto1 || producto.nombre == producto2){
+                cout << fixed << setprecision(2);
+                cout << producto.nombre << ": " << producto.total << endl; 
+            }
+        } 
+    }
+    cout << "--------------------" << endl;
+}
+
+void buscarProductosPromedio(float monto, bool superior, string pais, HashMap<unsigned int, Venta>& mapa, int& size) {
+    
+    Lista<producto_promedio> lista;
+
+    for (int i = 1; i <= size; i++) {
+        Venta v;
+        try {
+            v = mapa.get(i);
+        } catch (...) {
+            continue;
+        }
+        if (v.pais == pais) {
+            producto_promedio pp = {v.producto, v.monto_total, 1, 0};
+            bool found = false;
+            for (int j = 0; j < lista.getTamanio() && !found; j++) {
+                if (lista.getDato(j).producto == v.producto) {
+                    pp.total += v.monto_total;
+                    pp.ventas++;
+                    lista.reemplazar(j, pp);
+                    found = true;
+                }
+            }
+            if (!found) {
+                lista.insertarUltimo(pp);
+            }
+        }
+    }
+
+    for (int k = 0; k < lista.getTamanio(); k++) {
+        producto_promedio aux = lista.getDato(k);
+        aux.promedio = aux.total / aux.ventas;
+        lista.reemplazar(k, aux);
+    }
+
+    quicksortListaPP(lista, 0, lista.getTamanio() - 1);
+
+    busquedaBinaria(lista, monto);
+
+    if (superior) {
+        
+    }
 }
 
 #endif
